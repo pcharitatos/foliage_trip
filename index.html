@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Foliage day trip: Lakes Region and Conway</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍁</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,700;1,500&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+  /* Autumn palette: linen paper, bark ink, maple and gold accents */
+  :root {
+    --bg: #F5EFE4;
+    --surface: #FFFBF4;
+    --sunk: #EDE4D3;
+    --ink: #2E2219;
+    --muted: #6E5E4E;
+    --line: #E2D5C0;
+    --maple: #B5361E;
+    --gold: #D9961B;
+    --forest: #2F5A3C;
+    --focus: #2F5A3C;
+    --casing: #FFFBF4;
+    --neutral-leg: #8A7A68;
+    --shadow: 0 1px 2px rgba(46, 34, 25, .08), 0 8px 24px rgba(46, 34, 25, .08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17130F;
+      --surface: #211B15;
+      --sunk: #1B1611;
+      --ink: #F2E9DC;
+      --muted: #B8A996;
+      --line: #3B3128;
+      --maple: #E2694F;
+      --gold: #E8B04A;
+      --forest: #8CC29C;
+      --focus: #E8B04A;
+      --casing: #211B15;
+      --neutral-leg: #9C8D7B;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px rgba(0, 0, 0, .35);
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.55 "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  a { color: var(--forest); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+  button { font: inherit; color: inherit; }
+
+  /* Header with a few leaves drifting down behind the title */
+  header {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, rgba(217, 150, 27, .12), rgba(217, 150, 27, 0));
+  }
+  .header-inner {
+    position: relative; z-index: 1;
+    max-width: 1280px; margin: 0 auto;
+    padding: 2.5rem 1.25rem 1.6rem;
+    display: grid; gap: .35rem; justify-items: start;
+  }
+  .date { margin: 0; color: var(--muted); font-size: .85rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  h1 {
+    font-family: "Alegreya", Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(2.3rem, 5.5vw, 3.6rem);
+    line-height: 1.02;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  h1 em { font-style: italic; font-weight: 500; color: var(--maple); }
+  .sub { color: var(--muted); margin: 0 0 .4rem; font-size: 1rem; }
+  .maplink {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .3rem .7rem; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface);
+    color: var(--ink); text-decoration: none; font-size: .8rem; font-weight: 600;
+  }
+  .maplink:hover { border-color: var(--ink); }
+  .leaves { position: absolute; inset: 0; pointer-events: none; }
+  .leaves svg {
+    position: absolute; top: -40px; left: var(--x);
+    width: var(--s); height: var(--s); opacity: .55;
+    animation: fall var(--d) linear var(--delay) infinite;
+  }
+  @keyframes fall {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    25%  { transform: translate(18px, 70px) rotate(90deg); }
+    50%  { transform: translate(-12px, 140px) rotate(180deg); }
+    75%  { transform: translate(14px, 210px) rotate(270deg); }
+    100% { transform: translate(0, 290px) rotate(360deg); }
+  }
+
+  .strip {
+    height: 6px;
+    background: linear-gradient(90deg, #2F7A55, #6E9A3A, #B5A22A, #E0A21E, #E07B1E, #C8471E, #A3221C);
+  }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* Map */
+  .map-wrap { position: sticky; top: calc(1rem + env(safe-area-inset-top, 0px)); }
+  .map-frame { position: relative; }
+  #map {
+    height: min(84vh, 800px);
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background: var(--sunk);
+    overflow: hidden;
+  }
+  .map-nav {
+    position: absolute; top: .75rem; left: .75rem; right: 9.5rem;
+    display: flex; gap: .5rem; align-items: center;
+    pointer-events: none;
+  }
+  .map-nav > * { pointer-events: auto; }
+  .stepper {
+    display: flex; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    box-shadow: var(--shadow);
+    min-width: 0;
+  }
+  .stepper button {
+    border: 0; background: none; cursor: pointer;
+    width: 2.4rem; height: 2.4rem; border-radius: 50%;
+    display: grid; place-items: center; font-size: 1.1rem; color: var(--ink);
+  }
+  .stepper button:hover { background: var(--sunk); }
+  .stepper button:disabled { opacity: .35; cursor: default; background: none; }
+  .stepper .label {
+    padding: 0 .35rem; font-weight: 600; font-size: .9rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 17rem;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .stepper .label svg { width: 1.25rem; height: 1.25rem; flex: none; }
+  .chip-btn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 999px; padding: .5rem .9rem; font-weight: 600; font-size: .85rem;
+    cursor: pointer; box-shadow: var(--shadow);
+  }
+  .chip-btn:hover { border-color: var(--ink); }
+  #overview { position: absolute; right: .75rem; top: .75rem; display: flex; align-items: center; gap: .4rem; height: 2.5rem; }
+  .header-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+  /* Budget: a ticket stub with a perforated total */
+  .budget { margin-top: 2.75rem; scroll-margin-top: 1.5rem; }
+  .budget-head { display: flex; justify-content: space-between; align-items: center; gap: .75rem 1rem; flex-wrap: wrap; margin-bottom: .9rem; }
+  .ticket {
+    position: relative; overflow: hidden;
+    background: var(--surface); border-radius: 16px; box-shadow: var(--shadow);
+    padding: 1.3rem 1.4rem 1.1rem;
+  }
+  .ticket-leaf { position: absolute; right: -28px; top: -30px; width: 150px; height: 150px; transform: rotate(18deg); opacity: .08; fill: var(--maple); pointer-events: none; }
+  .ticket-bar { position: relative; display: flex; gap: 3px; height: 12px; margin-bottom: 1.1rem; }
+  .ticket-bar i { border-radius: 3px; min-width: 6px; transition: flex-grow .4s ease; }
+  .lines { position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; }
+  .lines li {
+    display: grid; grid-template-columns: 2rem auto minmax(1rem, 1fr) auto; align-items: center; gap: .65rem;
+    padding: .45rem .5rem; margin: 0 -.5rem; border-radius: 10px; cursor: pointer;
+  }
+  .lines li:hover, .lines li.hover { background: var(--sunk); }
+  .lines .ico { width: 2rem; height: 2rem; display: grid; place-items: center; }
+  .lines .ico .leaf { width: 2rem; height: 2rem; }
+  .lines .ico.car { width: 1.7rem; height: 1.7rem; border-radius: 7px; background: var(--ink); }
+  .lines .ico.car svg { width: 1rem; height: 1rem; fill: var(--bg); }
+  .lines .what { font-weight: 600; font-size: .93rem; line-height: 1.25; }
+  .lines .what small { display: block; font-weight: 400; color: var(--muted); font-size: .78rem; }
+  .lines .dots { align-self: end; margin-bottom: .5rem; border-bottom: 2px dotted var(--line); }
+  .lines .amt { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ticket-total {
+    position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    margin: 1rem -1.4rem 0; padding: 1rem 1.4rem 0; border-top: 2px dashed var(--line);
+  }
+  .ticket-total::before, .ticket-total::after {
+    content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg);
+  }
+  .ticket-total::before { left: -10px; }
+  .ticket-total::after { right: -10px; }
+  #total-label { font-family: "Alegreya", Georgia, serif; font-size: 1.2rem; font-weight: 700; }
+  .total-amt { font-family: "Alegreya", Georgia, serif; font-size: 1.7rem; font-weight: 700; color: var(--maple); font-variant-numeric: tabular-nums; }
+  .fine { position: relative; margin: .5rem 0 0; color: var(--muted); font-size: .78rem; }
+
+  /* Leaf badges, used in the list and as map pins */
+  .leaf { display: block; overflow: visible; }
+  .leaf path { stroke: #fff; stroke-width: 4; stroke-linejoin: round; }
+  .leaf text { font: 800 46px "Public Sans", sans-serif; text-anchor: middle; dominant-baseline: central; }
+  .marker { width: 44px; height: 44px; cursor: pointer; transition: opacity .25s ease; }
+  .marker.dim { opacity: .35; }
+  .marker .leaf {
+    width: 44px; height: 44px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.4));
+    transition: transform .2s ease;
+    transform-origin: 50% 60%;
+  }
+  .marker:hover .leaf, .marker.hover .leaf { transform: scale(1.15) rotate(-6deg); }
+  .marker.active .leaf { transform: scale(1.35) rotate(-8deg); filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)); }
+  .airport { width: 28px; height: 28px; cursor: default; }
+  .airport-pin {
+    width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+    background: #2E2219; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  }
+  .airport-pin svg { width: 16px; height: 16px; fill: #fff; }
+  .tag {
+    position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%);
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: .2rem .6rem; font: 500 12px "Public Sans", sans-serif; white-space: nowrap;
+    box-shadow: var(--shadow); display: none; pointer-events: none;
+  }
+  .tag b { font-weight: 600; }
+  .marker.active .tag, .marker.hover .tag, .marker:hover .tag { display: block; }
+
+  .leg-tip .maplibregl-popup-content {
+    background: var(--surface); color: var(--ink); border-radius: 10px; box-shadow: var(--shadow);
+    padding: .4rem .65rem; font: 500 .82rem "Public Sans", sans-serif;
+  }
+  .leg-tip .maplibregl-popup-tip { display: none; }
+
+  /* Timeline */
+  .plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: .75rem; }
+  h2 {
+    font-family: "Alegreya", Georgia, serif;
+    font-weight: 700;
+    font-size: 1.7rem;
+    margin: 0;
+  }
+  .plan { padding-bottom: 30vh; }
+  ol.timeline { list-style: none; margin: 0; padding: 0; display: grid; }
+
+  .stop {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: .9rem;
+    padding: .85rem;
+    margin: 0 -.85rem;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background .2s ease, box-shadow .2s ease;
+  }
+  .stop.has-photo { grid-template-columns: 3rem minmax(0, 1fr) 84px; }
+  .stop:hover, .stop.hover { background: var(--surface); }
+  .stop.active { background: var(--surface); box-shadow: var(--shadow); }
+  .badge { width: 3rem; height: 3rem; display: grid; place-items: center; }
+  .badge .leaf { width: 3rem; height: 3rem; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,.25)); }
+  .badge.plain { width: 2.3rem; height: 2.3rem; margin: .35rem; border-radius: 10px; background: var(--ink); }
+  .badge.plain svg { width: 1.05rem; height: 1.05rem; fill: var(--bg); }
+  .badge.pickup { width: 2.3rem; height: 2.3rem; margin: .35rem; border-radius: 50%; border: 2px dashed var(--muted); background: none; }
+  .badge.pickup svg { width: 1.1rem; height: 1.1rem; fill: var(--muted); }
+  .time { color: var(--muted); font-size: .9rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .stop h3 { margin: .1rem 0 .2rem; font-size: 1.15rem; font-weight: 600; line-height: 1.3; }
+  .stop h3 .town { font-weight: 400; color: var(--muted); }
+  .stop.active h3 { color: var(--maple); }
+  .stop-title { border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+  .stop p { margin: 0; max-width: 60ch; }
+  .meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; margin-top: .4rem; }
+  .meta:empty { display: none; }
+  .site {
+    display: inline-flex; align-items: center; gap: .25rem;
+    font-size: .82rem; font-weight: 500; color: var(--forest); text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--forest) 35%, transparent);
+  }
+  .site:hover { border-bottom-color: var(--forest); }
+  .thumb {
+    width: 84px; height: 84px; border-radius: 12px; object-fit: cover; display: block;
+    background: var(--sunk);
+  }
+  .stop.open .thumb { visibility: hidden; }
+
+  .gallery { display: none; margin: .3rem 0 .7rem; }
+  .stop.open .gallery { display: grid; gap: .5rem; }
+  .stage {
+    position: relative; margin: 0; border-radius: 12px; overflow: hidden;
+    background: var(--sunk); aspect-ratio: 3 / 2;
+  }
+  .stage img { position: relative; width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+  .stage.portrait img { object-fit: contain; }
+  .stage-bg {
+    position: absolute; inset: -24px;
+    background-size: cover; background-position: center;
+    filter: blur(18px) brightness(.6);
+  }
+  .stage figcaption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 2rem .75rem .55rem;
+    background: linear-gradient(transparent, rgba(0,0,0,.65));
+    color: #fff; font-size: .85rem;
+  }
+  .stage figcaption small { display: block; opacity: .85; font-size: .72rem; }
+  .stage figcaption small a { color: #fff; }
+  .strip-thumbs { display: flex; gap: .4rem; }
+  .strip-thumbs button {
+    padding: 0; border: 2px solid transparent; border-radius: 8px; overflow: hidden;
+    background: none; cursor: pointer; width: 64px; height: 46px;
+  }
+  .strip-thumbs button[aria-pressed="true"] { border-color: var(--maple); }
+  .strip-thumbs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* Drive rows: the bar uses the same color as that drive on the map */
+  .leg { margin-left: calc(1.5rem - 2px); }
+  .leg button {
+    display: block; width: 100%;
+    border: 0; background: none; cursor: pointer; text-align: left;
+    border-left: 4px solid var(--c);
+    padding: .4rem 0 .4rem 1.55rem;
+    color: var(--muted); font-size: .84rem; font-variant-numeric: tabular-nums;
+    transition: border-width .15s ease, padding .15s ease;
+  }
+  .leg button:hover, .leg.focus button { color: var(--ink); border-left-width: 7px; padding-left: calc(1.55rem - 3px); }
+  .leg.focus button { font-weight: 600; }
+
+  /* Lightbox */
+  dialog.lightbox {
+    width: min(1100px, 94vw); max-height: 94vh;
+    border: 0; padding: 0; background: transparent; overflow: visible;
+  }
+  dialog.lightbox::backdrop { background: rgba(20, 15, 10, .88); }
+  .lb-frame { position: relative; }
+  dialog.lightbox img { width: 100%; height: auto; max-height: 82vh; object-fit: contain; display: block; border-radius: 10px; cursor: pointer; }
+  dialog.lightbox p { color: #F2E9DC; margin: .6rem 0 0; font-size: .85rem; text-align: center; }
+  dialog.lightbox p a { color: #F3C979; }
+  .lb-count { font-variant-numeric: tabular-nums; opacity: .75; margin-right: .5rem; }
+  .lb-btn {
+    position: absolute; border: 0; border-radius: 999px; cursor: pointer;
+    background: rgba(0,0,0,.55); color: #fff; display: grid; place-items: center;
+  }
+  .lb-btn:hover { background: rgba(0,0,0,.75); }
+  .lb-btn[hidden] { display: none; }
+  .lb-close { top: .5rem; right: .5rem; width: 2.2rem; height: 2.2rem; font-size: 1.2rem; }
+  .lb-nav { top: 50%; transform: translateY(-50%); width: 2.8rem; height: 2.8rem; font-size: 1.6rem; line-height: 1; }
+  .lb-prev { left: .6rem; }
+  .lb-next { right: .6rem; }
+
+  footer { max-width: 1280px; margin: 0 auto; padding: 0 1.25rem 2rem; color: var(--muted); font-size: .8rem; }
+
+  @media (max-width: 960px) {
+    main { grid-template-columns: 1fr; }
+    .map-wrap {
+      position: sticky; top: 0; z-index: 5; background: var(--bg);
+      margin: 0 -1.25rem; padding: .5rem 1.25rem;
+    }
+    #map { height: 42vh; }
+    .plan { padding-bottom: 40vh; }
+  }
+  @media (max-width: 560px) {
+    .stop.has-photo { grid-template-columns: 3rem minmax(0, 1fr) 64px; }
+    .stop { gap: .7rem; }
+    .thumb { width: 64px; height: 64px; }
+    .stepper .label { max-width: 11rem; }
+    .marker.active .tag { display: none; }
+    #overview { width: 2.5rem; padding: 0; justify-content: center; }
+    #overview .txt { display: none; }
+    .map-nav { right: 3.75rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+    .leaves svg { animation: none; top: var(--rest); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="leaves" id="leaves" aria-hidden="true"></div>
+  <div class="header-inner">
+    <p class="date" id="trip-date"></p>
+    <h1>Foliage <em>day trip</em></h1>
+    <p class="sub">Lakes Region · Chocorua Lake · Kancamagus · Portsmouth</p>
+    <div class="header-links">
+      <a class="maplink" id="full-route" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        Google Maps
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="strip" aria-hidden="true"></div>
+
+<main>
+  <div class="map-wrap" id="map-wrap">
+    <div class="map-frame">
+      <div id="map" role="region" aria-label="Map of the trip route and stops"></div>
+      <div class="map-nav">
+        <div class="stepper" role="group" aria-label="Step through the day">
+          <button type="button" id="prev" aria-label="Previous stop">‹</button>
+          <span class="label" id="nav-label" aria-live="polite">Whole route</span>
+          <button type="button" id="next" aria-label="Next stop">›</button>
+        </div>
+      </div>
+      <button type="button" class="chip-btn" id="overview" aria-label="Whole route"><svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4"/></svg><span class="txt">Whole route</span></button>
+    </div>
+  </div>
+
+  <section class="plan" aria-labelledby="plan-h">
+    <div class="plan-head">
+      <h2 id="plan-h">Itinerary</h2>
+    </div>
+    <ol class="timeline" id="timeline"></ol>
+
+    <section class="budget" id="budget" aria-labelledby="budget-h">
+      <div class="budget-head">
+        <h2 id="budget-h">Budget</h2>
+      </div>
+      <div class="ticket">
+        <svg class="ticket-leaf" viewBox="0 0 100 100" aria-hidden="true"><path id="ticket-leaf-path"/></svg>
+        <div class="ticket-bar" id="ticket-bar" aria-hidden="true"></div>
+        <ul class="lines" id="cost-lines"></ul>
+        <div class="ticket-total">
+          <span id="total-label">Total per person</span>
+          <span class="total-amt" id="total-amt"></span>
+        </div>
+        <p class="fine" id="fine"></p>
+      </div>
+    </section>
+  </section>
+</main>
+
+<footer>Times are estimates.</footer>
+
+<dialog class="lightbox" id="lightbox" aria-label="Photo viewer">
+  <div class="lb-frame">
+    <img id="lb-img" alt="">
+    <button type="button" class="lb-btn lb-nav lb-prev" id="lb-prev" aria-label="Previous photo">‹</button>
+    <button type="button" class="lb-btn lb-nav lb-next" id="lb-next" aria-label="Next photo">›</button>
+    <button type="button" class="lb-btn lb-close" id="lb-close" aria-label="Close photo">×</button>
+  </div>
+  <p><span class="lb-count" id="lb-count"></span><span id="lb-cap"></span></p>
+</dialog>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+  // ---- Edit trip details here ----
+  const TRIP_DATE = "Sunday, October 18, 2026";
+
+  // Photos live in the photos/ folder next to this page: name.jpg and name-thumb.jpg.
+  // To add your own, drop the two files there and list them on the stop.
+  const P = (file, cap, by, lic, page, opts = {}) => ({ file, cap, by, lic, page, ...opts });
+  const C = "https://commons.wikimedia.org/wiki/File:";
+
+  // kind: "start" and "end" are Logan, "pickup" is listed but not on the map, "stop" is numbered and mapped
+  const DAY = [
+    { kind: "start", time: "7:00 AM", name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
+      lat: 42.3656, lng: -71.0096, note: "Pick up rental car",
+      cost: { what: "Rental car", detail: "Insurance, tolls and gas", lo: 55, hi: 65, per: "person", shared: true } },
+    { kind: "pickup", time: "7:20 AM", name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA",
+      lat: 42.3625, lng: -71.0862, note: "Pick up Cambridge group" },
+    { kind: "stop", time: "9:45 AM", name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH",
+      lat: 43.6525, lng: -71.5390, note: "Coffee and cider donuts", url: "https://www.moultonfarm.com",
+      cost: { what: "Coffee and cider donuts", detail: "Moulton Farm", lo: 6, hi: 10, per: "person", est: true },
+      photos: [
+        P("moulton-1", "Mums and pumpkins at the farm stand"),
+        P("moulton-2", "Whoopie pies"),
+        P("moulton-3", "The America 250 corn maze from above")
+      ] },
+    { kind: "stop", time: "10:45 AM", name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH",
+      lat: 43.7400, lng: -71.3250, note: "View and coffee", url: "https://www.castleintheclouds.org",
+      cost: { what: "Coffee", detail: "Castle in the Clouds, Carriage House", lo: 4, hi: 6, per: "person", est: true },
+      photos: [
+        P("castle-1", "The Lucknow mansion in fall color"),
+        P("castle-2", "Lake Winnipesaukee and its islands")
+      ] },
+    { kind: "stop", time: "11:55 AM", name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH",
+      lat: 43.9000, lng: -71.2410, note: "", url: "https://chocorualake.org/chocorua-lake",
+      photos: [
+        P("chocorua-lake-1", "Mount Chocorua reflected in the lake"),
+        P("chocorua-lake-2", "A calm morning on the lake"),
+        P("chocorua-lake-3", "Fall color along the shore")
+      ] },
+    { kind: "stop", time: "12:45 PM", name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH",
+      lat: 44.0720, lng: -71.1330, note: "Stop for lunch", url: "https://www.moatmountain.com",
+      cost: { what: "Lunch", detail: "Moat Mountain Smokehouse", lo: 15, hi: 25, per: "person", est: true },
+      photos: [
+        P("moat-mountain-1", "Moat Mountain IPA with a fall view", "", "", "", { portrait: true }),
+        P("moat-mountain-2", "Barbecue and a beer flight", "", "", "", { portrait: true }),
+        P("moat-mountain-3", "The beer garden", "", "", "", { portrait: true })
+      ] },
+    { kind: "stop", time: "2:05 PM", name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH",
+      lat: 43.9917, lng: -71.2420, note: "Short stop on the Kancamagus", url: "https://www.fs.usda.gov/r09/whitemountain/recreation/albany-covered-bridge",
+      photos: [
+        P("albany-covered-bridge-1", "Red maples over the Swift River and the bridge"),
+        P("albany-covered-bridge-2", "The bridge entrance under the maples"),
+        P("albany-covered-bridge-3", "The bridge over the Swift River")
+      ] },
+    { kind: "stop", time: "2:40 PM", name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH",
+      lat: 43.9975, lng: -71.3940, note: "Walk to the falls", url: "https://www.trailfinder.info/trails/trail/sabbaday-falls",
+      cost: { what: "Parking day pass", detail: "Sabbaday Falls, $5 per car", lo: 5, hi: 5, per: "car", shared: true },
+      photos: [
+        P("sabbaday-falls-1", "The falls and the viewing platform"),
+        P("sabbaday-falls-2", "The pool below the falls", "", "", "", { portrait: true })
+      ] },
+    { kind: "stop", time: "5:30 PM", name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH",
+      lat: 43.0773, lng: -70.7577, note: "Stop for dinner", url: "https://www.goportsmouthnh.com",
+      cost: { what: "Dinner", detail: "Portsmouth", lo: 20, hi: 30, per: "person", est: true },
+      photos: [
+        P("portsmouth-1", "Fall reflections in Portsmouth")
+      ] },
+    { kind: "end", time: "7:40 PM", name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
+      lat: 42.3656, lng: -71.0096, note: "Drop off rental car" }
+  ];
+  const PEOPLE_PER_CAR = 5;
+  // ---------------------------------
+
+  // Stops are numbered 1–7 and colored green to maple; the drive into a stop shares its color
+  const COLORS = ["#2F7A55", "#6E9A3A", "#B5A22A", "#E0A21E", "#E07B1E", "#C8471E", "#A3221C"];
+  const STOP_IDX = DAY.map((d, i) => d.kind === "stop" ? i : -1).filter(i => i >= 0);
+  const numOf = i => STOP_IDX.indexOf(i);          // 0-based stop number, or -1
+  const colorOf = i => numOf(i) >= 0 ? COLORS[numOf(i)] : null;
+  const inkOf = i => (numOf(i) === 2 || numOf(i) === 3) ? "#2E2219" : "#fff";
+  const ALL_BOUNDS = [[-71.62, 42.30], [-70.70, 44.12]];
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const narrow = window.matchMedia("(max-width: 960px)");
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const esc = s => s.replace(/"/g, "&quot;");
+  const fmtDur = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  const legColor = j => colorOf(j + 1) || css("--neutral-leg");   // leg j drives into DAY[j + 1]
+
+  const LEAF = "M50 4 57 18 65 14 62 34 74 24 78 30 90 28 84 42 94 46 74 62 77 70 55 66 53 80 53 96 47 96 47 80 45 66 23 70 26 62 6 46 16 42 10 28 22 30 26 24 38 34 35 14 43 18Z";
+  const leafSvg = (fill, label = "", ink = "#fff") =>
+    `<svg class="leaf" viewBox="0 0 100 100" aria-hidden="true"><path d="${LEAF}" fill="${fill}"/>${label !== "" ? `<text x="50" y="47" fill="${ink}">${label}</text>` : ""}</svg>`;
+  const CAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 6c-.2-.6-.8-1-1.4-1h-11c-.7 0-1.2.4-1.4 1L3 12v8c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-1h12v1c0 .6.4 1 1 1h1c.6 0 1-.4 1-1v-8l-2.1-6zM6.5 16a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm11 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 11l1.5-4.5h11L19 11H5z"/></svg>`;
+  const PERSON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/></svg>`;
+
+  const src = p => `photos/${p.file}.jpg`;
+  const thumb = p => `photos/${p.file}-thumb.jpg`;
+  // Photos you add yourself need no credit line; Wikimedia photos carry their license credit
+  const credit = p => p.by ? `Photo: ${p.by}, <a href="${p.page}" target="_blank" rel="noopener">${p.lic}</a>` : "";
+
+  document.getElementById("trip-date").textContent = TRIP_DATE;
+  document.getElementById("full-route").href = "https://www.google.com/maps/dir/?api=1&travelmode=driving"
+    + "&origin=" + encodeURIComponent(DAY[0].q)
+    + "&destination=" + encodeURIComponent(DAY[DAY.length - 1].q)
+    + "&waypoints=" + encodeURIComponent(DAY.slice(1, -1).map(d => d.q).join("|"));
+
+  // ---- Falling leaves in the header ----
+  (function () {
+    const tones = ["#C8471E", "#E07B1E", "#E0A21E", "#B5A22A", "#A3221C", "#6E9A3A"];
+    let h = "";
+    for (let k = 0; k < 12; k++) {
+      const x = (k * 8.3 + (k % 3) * 2.7) % 100, s = 16 + (k * 7) % 16, d = 10 + (k * 3) % 8;
+      h += `<svg viewBox="0 0 100 100" style="--x:${x}%;--s:${s}px;--d:${d}s;--delay:-${(k * 1.7) % d}s;--rest:${10 + (k * 23) % 70}%"><path d="${LEAF}" fill="${tones[k % tones.length]}"/></svg>`;
+    }
+    document.getElementById("leaves").innerHTML = h;
+  })();
+
+  // ---- Photo viewer: steps through the photos of one stop ----
+  const lb = document.getElementById("lightbox");
+  let lbStop = null, lbIndex = 0;
+  function showLightbox() {
+    const photos = DAY[lbStop].photos, p = photos[lbIndex], many = photos.length > 1;
+    const lbImg = document.getElementById("lb-img");
+    lbImg.src = src(p);
+    lbImg.alt = p.cap;
+    document.getElementById("lb-cap").innerHTML = p.by ? `${p.cap}. ${credit(p)}` : p.cap;
+    document.getElementById("lb-count").textContent = many ? `${lbIndex + 1} / ${photos.length}` : "";
+    document.getElementById("lb-prev").hidden = !many;
+    document.getElementById("lb-next").hidden = !many;
+    if (many) new Image().src = src(photos[(lbIndex + 1) % photos.length]);   // preload the next one
+    renderGallery(lbStop, lbIndex);   // the card shows the same photo when the viewer closes
+  }
+  function openLightbox(stop, k) {
+    lbStop = stop; lbIndex = k;
+    showLightbox();
+    if (!lb.open) { if (lb.showModal) lb.showModal(); else lb.setAttribute("open", ""); }
+  }
+  function lbStep(dir) {
+    const n = DAY[lbStop].photos.length;
+    if (n < 2) return;
+    lbIndex = (lbIndex + dir + n) % n;
+    showLightbox();
+  }
+  document.getElementById("lb-close").onclick = () => lb.close();
+  document.getElementById("lb-prev").onclick = () => lbStep(-1);
+  document.getElementById("lb-next").onclick = () => lbStep(1);
+  lb.addEventListener("click", e => {
+    if (e.target === lb) lb.close();                         // click on the dark backdrop
+    else if (e.target.id === "lb-img") lbStep(1);            // click the photo for the next one
+  });
+  lb.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") { e.preventDefault(); lbStep(1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); lbStep(-1); }
+  });
+  let touchX = null;
+  lb.addEventListener("touchstart", e => { touchX = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener("touchend", e => {
+    if (touchX === null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 40) lbStep(dx < 0 ? 1 : -1);
+    touchX = null;
+  });
+
+  // ---- Timeline ----
+  const tl = document.getElementById("timeline");
+  const badge = i => {
+    const d = DAY[i];
+    if (d.kind === "stop") return `<span class="badge">${leafSvg(colorOf(i), numOf(i) + 1, inkOf(i))}</span>`;
+    if (d.kind === "pickup") return `<span class="badge pickup" aria-hidden="true">${PERSON}</span>`;
+    return `<span class="badge plain" aria-hidden="true">${CAR}</span>`;
+  };
+  let html = "";
+  DAY.forEach((d, i) => {
+    if (i > 0) html += `<li class="leg" data-leg="${i - 1}" style="--c:${legColor(i - 1)}"><button type="button" data-leg-btn="${i - 1}">Drive</button></li>`;
+    const has = d.photos && d.photos.length > 0;
+    html += `<li class="stop${has ? " has-photo" : ""}" id="day-${i}" data-sync="${i}">
+      ${badge(i)}
+      <div>
+        <div class="time">${d.time}</div>
+        <h3><button type="button" class="stop-title"${has ? ` aria-expanded="false" aria-controls="gallery-${i}"` : ""}>${d.name}</button>${d.town ? ` <span class="town">${d.town}</span>` : ""}</h3>
+        ${has ? `<div class="gallery" id="gallery-${i}"></div>` : ""}
+        ${d.note ? `<p>${d.note}</p>` : ""}
+        <div class="meta">${d.url ? `<a class="site" href="${d.url}" target="_blank" rel="noopener">${new URL(d.url).hostname.replace(/^www\./, "")}<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h5v5M9.5 2.5 3 9"/></svg></a>` : ""}</div>
+      </div>
+      ${has ? `<img class="thumb" src="${thumb(d.photos[0])}" alt="">` : ""}
+    </li>`;
+  });
+  tl.innerHTML = html;
+
+  function renderGallery(i, k = 0) {
+    const d = DAY[i], p = d.photos[k];
+    document.getElementById("gallery-" + i).innerHTML = `<figure class="stage${p.portrait ? " portrait" : ""}">
+        ${p.portrait ? `<div class="stage-bg" style="background-image:url('${thumb(p)}')"></div>` : ""}
+        <img src="${src(p)}" alt="${esc(p.cap)}" data-lb-stop="${i}" data-lb-k="${k}">
+        <figcaption>${p.cap}${p.by ? `<small>${credit(p)}</small>` : ""}</figcaption>
+      </figure>
+      ${d.photos.length > 1 ? `<div class="strip-thumbs">${d.photos.map((q, j) =>
+        `<button type="button" data-g="${i}" data-k="${j}" aria-pressed="${j === k}" aria-label="Photo ${j + 1} of ${d.photos.length}"><img src="${thumb(q)}" alt=""></button>`).join("")}</div>` : ""}`;
+  }
+  function setOpen(i, open) {
+    const el = document.getElementById("day-" + i), d = DAY[i];
+    if (!d.photos || !d.photos.length) return;
+    if (open && !el.classList.contains("open")) renderGallery(i, 0);
+    el.classList.toggle("open", open);
+    el.querySelector(".stop-title").setAttribute("aria-expanded", open);
+  }
+
+  // ---- Budget (per person) ----
+  // Shared costs (the car and the parking pass) are split by PEOPLE_PER_CAR and marked with *
+  const COSTED = DAY.map((d, i) => d.cost ? i : -1).filter(i => i >= 0);
+  const perPerson = (c, v) => c.per === "car" ? v / PEOPLE_PER_CAR : v;
+  const money = v => "$" + (v % 1 ? v.toFixed(2) : v.toLocaleString("en-US"));
+  const range = (lo, hi) => lo === hi ? money(lo) : `${money(lo)}–${money(hi).slice(1)}`;
+  const costText = c => `${c.est ? "≈ " : ""}${range(perPerson(c, c.lo), perPerson(c, c.hi))}`;
+  const costIcon = i => DAY[i].kind === "stop"
+    ? `<span class="ico">${leafSvg(colorOf(i), numOf(i) + 1, inkOf(i))}</span>`
+    : `<span class="ico car">${CAR}</span>`;
+
+  function renderCosts() {
+    document.getElementById("ticket-leaf-path").setAttribute("d", LEAF);
+    document.getElementById("cost-lines").innerHTML = COSTED.map(i => {
+      const c = DAY[i].cost;
+      return `<li data-day="${i}" tabindex="0" role="button" aria-label="${c.what}, show ${DAY[i].name} on the itinerary">
+        ${costIcon(i)}<span class="what">${c.what}${c.shared ? "*" : ""}<small>${c.detail}</small></span><span class="dots"></span><span class="amt">${costText(c)}</span></li>`;
+    }).join("");
+    const all = COSTED.reduce((acc, i) => {
+      const c = DAY[i].cost;
+      return { lo: acc.lo + perPerson(c, c.lo), hi: acc.hi + perPerson(c, c.hi), est: acc.est || !!c.est };
+    }, { lo: 0, hi: 0, est: false });
+    document.getElementById("total-amt").textContent = (all.est ? "≈ " : "") + range(Math.round(all.lo), Math.round(all.hi));
+    document.getElementById("fine").textContent = `* Assumes ${PEOPLE_PER_CAR} people per car.`;
+    // Bar: each slice is that line's share of the typical total, in the stop's color
+    document.getElementById("ticket-bar").innerHTML = COSTED.map(i => {
+      const c = DAY[i].cost, mid = (perPerson(c, c.lo) + perPerson(c, c.hi)) / 2;
+      return `<i style="flex-grow:${mid};background:${colorOf(i) || css("--neutral-leg")}" title="${c.what}"></i>`;
+    }).join("");
+  }
+  const costLines = document.getElementById("cost-lines");
+  costLines.addEventListener("click", e => {
+    const li = e.target.closest("li[data-day]");
+    if (li) activate(li.dataset.day, { scroll: true });
+  });
+  costLines.addEventListener("keydown", e => {
+    const li = e.target.closest("li[data-day]");
+    if (li && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); activate(li.dataset.day, { scroll: true }); }
+  });
+  costLines.addEventListener("mouseover", e => {
+    const li = e.target.closest("li[data-day]"), i = li ? +li.dataset.day : null;
+    document.querySelectorAll(".stop.hover").forEach(el => el.classList.remove("hover"));
+    STOP_IDX.forEach(k => markers[k] && markers[k].classList.toggle("hover", k === i));
+    if (i !== null) document.getElementById("day-" + i).classList.add("hover");
+  });
+  costLines.addEventListener("mouseleave", () => {
+    document.querySelectorAll(".stop.hover").forEach(el => el.classList.remove("hover"));
+    STOP_IDX.forEach(k => markers[k] && markers[k].classList.remove("hover"));
+  });
+
+  // ---- Map ----
+  const LIGHT = "https://tiles.openfreemap.org/styles/positron";
+  const DARK = "https://tiles.openfreemap.org/styles/dark";
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  const map = new maplibregl.Map({
+    container: "map",
+    style: darkQuery.matches ? DARK : LIGHT,
+    bounds: ALL_BOUNDS,
+    fitBoundsOptions: { padding: 50 },
+    cooperativeGestures: true,
+    attributionControl: { compact: true }
+  });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
+
+  // Warm the base map: linen land, amber woods, slate water
+  function autumnBase() {
+    const dark = darkQuery.matches;
+    const tint = dark
+      ? { background: "#1C1712", park: "#2A2117", landcover_wood: "#2C2216", landuse_residential: "#221C16", building: "#2A231C", water: "#1D272B" }
+      : { background: "#F4EEE3", park: "#EEE4D0", landcover_wood: "#EDE0C6", landuse_residential: "#EFE6D8", building: "#E8DDCD", water: "#BFD0D3" };
+    for (const [id, color] of Object.entries(tint)) {
+      const layer = map.getLayer(id);
+      if (!layer) continue;
+      map.setPaintProperty(id, layer.type === "background" ? "background-color" : "fill-color", color);
+    }
+  }
+
+  const airportEl = document.createElement("div");
+  airportEl.className = "marker airport";
+  airportEl.innerHTML = `<div class="airport-pin">${CAR}</div><div class="tag"><b>Boston Logan International Airport</b> · rental car</div>`;
+  new maplibregl.Marker({ element: airportEl }).setLngLat([DAY[0].lng, DAY[0].lat]).addTo(map);
+
+  const markers = {};
+  STOP_IDX.forEach(i => {
+    const d = DAY[i], el = document.createElement("div");
+    el.className = "marker";
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    el.setAttribute("aria-label", `${numOf(i) + 1}. ${d.name}`);
+    el.innerHTML = `${leafSvg(colorOf(i), numOf(i) + 1, inkOf(i))}<div class="tag"><b>${d.name}</b> · ${d.time}</div>`;
+    const go = () => activate(String(i), { scroll: true, open: true });
+    el.addEventListener("click", e => { e.stopPropagation(); go(); });
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    el.addEventListener("mouseenter", () => document.getElementById("day-" + i).classList.add("hover"));
+    el.addEventListener("mouseleave", () => document.getElementById("day-" + i).classList.remove("hover"));
+    new maplibregl.Marker({ element: el }).setLngLat([d.lng, d.lat]).addTo(map);
+    markers[i] = el;
+  });
+
+  // Route from OSRM through every point (Cambridge included), one line per drive
+  let legs = null;
+  const routeReady = fetch(`https://router.project-osrm.org/route/v1/driving/${DAY.map(d => `${d.lng},${d.lat}`).join(";")}?overview=false&steps=true&geometries=geojson`)
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(d => {
+      const r = d.routes[0];
+      legs = r.legs.map((l, j) => ({ j, coords: l.steps.flatMap(st => st.geometry.coordinates), min: Math.round(l.duration / 60), mi: Math.round(l.distance / 1609.34) }));
+    })
+    .catch(() => {
+      legs = DAY.slice(1).map((d, j) => ({ j, coords: [[DAY[j].lng, DAY[j].lat], [d.lng, d.lat]], min: null, mi: null, straight: true }));
+    })
+    .then(() => {
+      document.querySelectorAll("button[data-leg-btn]").forEach(b => {
+        const l = legs[+b.dataset.legBtn];
+        b.textContent = l.min != null ? `${fmtDur(l.min)} · ${l.mi} mi` : "Drive";
+      });
+    });
+
+  function chevron() {
+    const s = 32, c = document.createElement("canvas");
+    c.width = c.height = s;
+    const g = c.getContext("2d");
+    g.strokeStyle = "#ffffff"; g.lineWidth = 5; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(12, 8); g.lineTo(21, 16); g.lineTo(12, 24); g.stroke();
+    return { width: s, height: s, data: new Uint8Array(g.getImageData(0, 0, s, s).data.buffer) };
+  }
+
+  // Halfway point along a drive, for its time label (one label per drive)
+  function midpoint(coords) {
+    const seg = coords.slice(1).map((c, k) => Math.hypot(c[0] - coords[k][0], c[1] - coords[k][1]));
+    let half = seg.reduce((a, b) => a + b, 0) / 2;
+    for (let k = 0; k < seg.length; k++) {
+      if (half <= seg[k]) {
+        const t = seg[k] ? half / seg[k] : 0, a = coords[k], b = coords[k + 1];
+        return [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
+      }
+      half -= seg[k];
+    }
+    return coords[coords.length - 1];
+  }
+
+  function addRouteLayers() {
+    if (!legs || map.getSource("legs")) return;
+    if (!map.hasImage("chev")) map.addImage("chev", chevron(), { pixelRatio: 2 });
+    map.addSource("legs", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: legs.map(l => ({
+        type: "Feature", id: l.j,
+        properties: { leg: l.j, color: legColor(l.j), label: l.min != null ? fmtDur(l.min) : "" },
+        geometry: { type: "LineString", coordinates: l.coords } })) }
+    });
+    map.addSource("leg-mids", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: legs.map(l => ({
+        type: "Feature", id: l.j,
+        properties: { label: l.min != null ? fmtDur(l.min) : "" },
+        geometry: { type: "Point", coordinates: midpoint(l.coords) } })) }
+    });
+    const focus = ["boolean", ["feature-state", "focus"], false];
+    const dim = ["boolean", ["feature-state", "dim"], false];
+    const width = (base, on) => ["interpolate", ["linear"], ["zoom"],
+      6, ["case", focus, on * .75, base * .7], 10, ["case", focus, on, base], 13, ["case", focus, on * 1.25, base * 1.25]];
+    // Every drive sits on its right-hand side, so out-and-back drives on one road show side by side
+    const offset = 3;
+    const round = { "line-join": "round", "line-cap": "round" };
+    const dash = legs[0].straight ? { "line-dasharray": [2, 2] } : {};
+    map.addLayer({ id: "legs-casing", type: "line", source: "legs", layout: round,
+      paint: { "line-color": css("--casing"), "line-width": width(8, 12), "line-offset": offset, "line-opacity": ["case", dim, .3, 1] } });
+    map.addLayer({ id: "legs-line", type: "line", source: "legs", layout: round,
+      paint: { "line-color": ["get", "color"], "line-width": width(5, 8), "line-offset": offset, "line-opacity": ["case", dim, .25, 1], ...dash } });
+    map.addLayer({ id: "legs-arrows", type: "symbol", source: "legs",
+      layout: { "symbol-placement": "line", "symbol-spacing": 70, "icon-image": "chev",
+        "icon-size": ["interpolate", ["linear"], ["zoom"], 6, .5, 12, .8], "icon-offset": [0, 4],
+        "icon-rotation-alignment": "map", "icon-allow-overlap": true, "icon-ignore-placement": true },
+      paint: { "icon-opacity": ["case", dim, 0, .95] } });
+    map.addLayer({ id: "legs-labels", type: "symbol", source: "leg-mids",
+      layout: { "text-field": ["get", "label"], "text-font": ["Noto Sans Bold"],
+        "text-size": 12, "text-offset": [0, -1.1], "text-padding": 6 },
+      paint: { "text-color": css("--ink"), "text-halo-color": css("--casing"), "text-halo-width": 2.5, "text-opacity": ["case", dim, 0, 1] } });
+    map.addLayer({ id: "legs-hit", type: "line", source: "legs", paint: { "line-color": "#000", "line-width": 18, "line-opacity": 0 } });
+    applyLegStates();
+    bindLegEvents();
+  }
+
+  const legTip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, className: "leg-tip", offset: 12 });
+  let hoverLeg = null, legEvents = false;
+  function setHoverLeg(j) { if (hoverLeg !== j) { hoverLeg = j; applyLegStates(); } }
+  function bindLegEvents() {
+    if (legEvents) return;
+    legEvents = true;
+    map.on("mousemove", "legs-hit", e => {
+      const l = legs[e.features[0].properties.leg];
+      map.getCanvas().style.cursor = "pointer";
+      legTip.setLngLat(e.lngLat).setText(`${DAY[l.j].name} → ${DAY[l.j + 1].name}${l.min != null ? ` · ${fmtDur(l.min)}` : ""}`).addTo(map);
+      setHoverLeg(l.j);
+    });
+    map.on("mouseleave", "legs-hit", () => {
+      map.getCanvas().style.cursor = "";
+      legTip.remove();
+      setHoverLeg(null);
+    });
+    map.on("click", "legs-hit", e => activate(String(e.features[0].properties.leg + 1), { scroll: true }));
+  }
+
+  map.on("style.load", () => { autumnBase(); routeReady.then(addRouteLayers); });
+  darkQuery.addEventListener?.("change", e => map.setStyle(e.matches ? DARK : LIGHT));
+
+  // ---- Keeping the map and the list in step ----
+  // syncKey is a DAY index as a string, or "overview" after the Whole route button
+  let syncKey = null;
+  const idxOf = key => /^\d+$/.test(key) ? +key : null;
+  const legFor = key => { const i = idxOf(key); return i ? i - 1 : null; };   // the drive into DAY[i]
+
+  function applyLegStates() {
+    const on = new Set();
+    const a = syncKey ? legFor(syncKey) : null;
+    if (a !== null) on.add(a);
+    if (hoverLeg !== null) on.add(hoverLeg);
+    if (legs && map.getSource("legs")) {
+      legs.forEach(l => {
+        const state = { focus: on.has(l.j), dim: on.size > 0 && !on.has(l.j) };
+        map.setFeatureState({ source: "legs", id: l.j }, state);
+        map.setFeatureState({ source: "leg-mids", id: l.j }, state);
+      });
+    }
+    document.querySelectorAll(".leg[data-leg]").forEach(el => el.classList.toggle("focus", on.has(+el.dataset.leg)));
+  }
+
+  function moveCamera(key, instant) {
+    const duration = instant || reduceMotion ? 0 : 1000;
+    const padding = narrow.matches ? { top: 64, bottom: 28, left: 28, right: 28 } : { top: 84, bottom: 60, left: 60, right: 60 };
+    const j = legFor(key), l = legs && j !== null ? legs[j] : null;
+    if (l) {
+      const b = l.coords.reduce((acc, c) => acc.extend(c), new maplibregl.LngLatBounds(l.coords[0], l.coords[0]));
+      map.fitBounds(b, { padding, maxZoom: 11.5, duration, essential: true });
+    } else if (idxOf(key)) {
+      const d = DAY[idxOf(key)];
+      map.flyTo({ center: [d.lng, d.lat], zoom: 10, duration, essential: true });
+    } else {
+      map.fitBounds(ALL_BOUNDS, { padding, duration, essential: true });
+    }
+  }
+
+  function activate(key, { scroll = false, open = false, instant = false } = {}) {
+    syncKey = key;
+    const i = idxOf(key);
+    const focusMode = i !== null && i > 0;
+    document.querySelectorAll(".stop[data-sync]").forEach(el => el.classList.toggle("active", el.dataset.sync === key));
+    STOP_IDX.forEach(s => {
+      const el = markers[s];
+      el.classList.toggle("active", s === i);
+      el.classList.toggle("dim", focusMode && s !== i && s !== i - 1);
+      el.style.zIndex = s === i ? 3 : "";
+    });
+    const airportInPlay = !focusMode || DAY[i].kind !== "stop" || i - 1 === 0;
+    airportEl.classList.toggle("dim", !airportInPlay);
+    if (open && i !== null) DAY.forEach((_, j) => setOpen(j, j === i));
+    applyLegStates();
+    updateNav();
+    moveCamera(key, instant);
+    if (scroll) scrollToKey(key);
+  }
+
+  // The list's reading point: just below the pinned map on phones, a bit above the middle on wide screens
+  const mapWrap = document.getElementById("map-wrap");
+  function readingLine() {
+    if (narrow.matches) {
+      const b = mapWrap.offsetHeight;
+      return b + (innerHeight - b) * .2;
+    }
+    return innerHeight * .38;
+  }
+  const syncItems = () => [...tl.querySelectorAll("[data-sync]")];
+  function keyFromScroll() {
+    const line = readingLine(), items = syncItems();
+    if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) return items[items.length - 1].dataset.sync;
+    let cur = items[0];
+    for (const el of items) {
+      if (el.getBoundingClientRect().top <= line) cur = el; else break;
+    }
+    return cur.dataset.sync;
+  }
+
+  // While the page scrolls itself to a stop, ignore that scroll so the map doesn't flicker through
+  // the stops in between. The lock ends when the scroll arrives, after 1.5 s, or when you scroll yourself.
+  let lockTarget = null, lockUntil = 0, ticking = false;
+  function scrollToKey(key) {
+    const el = tl.querySelector(`[data-sync="${key}"]`);
+    if (!el) return;
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const top = Math.round(Math.min(max, Math.max(0, scrollY + el.getBoundingClientRect().top - (readingLine() - 24))));
+    if (Math.abs(top - scrollY) < 3) return;
+    lockTarget = top;
+    lockUntil = performance.now() + 1500;
+    window.scrollTo({ top, behavior: reduceMotion ? "auto" : "smooth" });
+  }
+  ["wheel", "touchstart"].forEach(t => window.addEventListener(t, () => { lockTarget = null; }, { passive: true }));
+  window.addEventListener("scroll", () => {
+    if (lockTarget !== null) {
+      const arrived = Math.abs(scrollY - lockTarget) < 3;
+      if (!arrived && performance.now() <= lockUntil) return;
+      lockTarget = null;
+      if (arrived) return;
+    }
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const k = keyFromScroll();
+      if (k !== syncKey) activate(k);
+    });
+  }, { passive: true });
+
+  // Stepper, overview and keys
+  function updateNav() {
+    const i = idxOf(syncKey), label = document.getElementById("nav-label");
+    if (i === null) label.textContent = "Whole route";
+    else if (DAY[i].kind === "stop") label.innerHTML = `${leafSvg(colorOf(i), numOf(i) + 1, inkOf(i))}${DAY[i].name}`;
+    else label.textContent = DAY[i].name;
+    document.getElementById("prev").disabled = !i;
+    document.getElementById("next").disabled = i === DAY.length - 1;
+  }
+  const step = dir => {
+    const i = idxOf(syncKey);
+    const n = i === null ? (dir > 0 ? 0 : null) : i + dir;
+    if (n !== null && n >= 0 && n < DAY.length) activate(String(n), { scroll: true });
+  };
+  document.getElementById("prev").onclick = () => step(-1);
+  document.getElementById("next").onclick = () => step(1);
+  document.getElementById("overview").onclick = () => activate("overview");
+  document.addEventListener("keydown", e => {
+    if (lb.open || e.target.closest("input, textarea, select, .maplibregl-canvas")) return;
+    if (e.key === "ArrowRight") { e.preventDefault(); step(1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); step(-1); }
+    if (e.key === "Escape" && somethingSelected()) deselect();
+  });
+
+  // List interactions
+  tl.addEventListener("click", e => {
+    const t = e.target.closest("img[data-lb-stop]");
+    if (t) { openLightbox(+t.dataset.lbStop, +t.dataset.lbK); return; }
+    const g = e.target.closest("button[data-g]");
+    if (g) { renderGallery(+g.dataset.g, +g.dataset.k); return; }
+    const lbtn = e.target.closest("button[data-leg-btn]");
+    if (lbtn) { activate(String(+lbtn.dataset.legBtn + 1), { scroll: true }); return; }
+    if (e.target.closest("a")) return;
+    const s = e.target.closest(".stop[data-sync]");
+    if (!s) return;
+    const i = +s.dataset.sync;
+    if (e.target.closest(".stop-title") && s.classList.contains("open")) { setOpen(i, false); return; }
+    activate(String(i), { scroll: true, open: true });
+  });
+  tl.addEventListener("mouseover", e => {
+    const s = e.target.closest(".stop[data-sync]");
+    STOP_IDX.forEach(k => markers[k].classList.toggle("hover", !!s && +s.dataset.sync === k));
+    const l = e.target.closest(".leg[data-leg]");
+    setHoverLeg(l ? +l.dataset.leg : null);
+  });
+  tl.addEventListener("mouseleave", () => {
+    STOP_IDX.forEach(k => markers[k].classList.remove("hover"));
+    setHoverLeg(null);
+  });
+
+  // Clicking anywhere outside the selected stop unselects it and shows the whole route again.
+  // Clicks on the map controls, drives, pins and the photo viewer don't count; they select something themselves.
+  const somethingSelected = () => !!document.querySelector(".stop.active, .stop.open");
+  function deselect() {
+    DAY.forEach((_, j) => setOpen(j, false));
+    activate("overview");
+  }
+  document.addEventListener("click", e => {
+    if (lb.open || e.target.closest(".stop.active, .stop.open, .leg, .map-wrap, dialog, .budget")) return;
+    if (somethingSelected()) deselect();
+  });
+  // Map clicks go through MapLibre so that dragging the map doesn't count as a click
+  map.on("click", e => {
+    if (map.getLayer("legs-hit") && map.queryRenderedFeatures(e.point, { layers: ["legs-hit"] }).length) return;
+    if (somethingSelected()) deselect();
+  });
+
+  renderCosts();
+
+  // Start in step with wherever the page is already scrolled
+  Promise.all([routeReady, new Promise(r => map.loaded() ? r() : map.once("load", r))]).then(() => {
+    map.resize();
+    document.querySelectorAll(".maplibregl-compact-show").forEach(el => el.classList.remove("maplibregl-compact-show"));
+    activate(keyFromScroll(), { instant: true });
+  });
+  updateNav();
+</script>
+</body>
+</html>
