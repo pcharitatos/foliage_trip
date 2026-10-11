@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Foliage day trip</title>
+<title>Foliage day trip: Lakes Region and Conway</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍁</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -264,7 +264,17 @@
   .badge.plain svg { width: 1.05rem; height: 1.05rem; fill: var(--bg); }
   .badge.pickup { width: 2.3rem; height: 2.3rem; margin: .35rem; border-radius: 50%; border: 2px dashed var(--muted); background: none; }
   .badge.pickup svg { width: 1.1rem; height: 1.1rem; fill: var(--muted); }
-  .time { color: var(--muted); font-size: .9rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .time { color: var(--muted); font-size: .9rem; font-weight: 500; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .5rem; }
+  .stay {
+    display: inline-flex; align-items: center; gap: .25rem;
+    padding: 0 .5rem; border-radius: 999px; font-size: .76rem; font-weight: 600;
+    background: var(--sunk); border: 1px solid var(--line); color: var(--ink);
+  }
+  .stay::before {
+    content: ""; width: .62rem; height: .62rem; border-radius: 50%;
+    border: 1.5px solid currentColor; opacity: .55;
+    background: linear-gradient(currentColor, currentColor) 50% 30% / 1.5px 35% no-repeat;
+  }
   .stop h3 { margin: .1rem 0 .2rem; font-size: 1.15rem; font-weight: 600; line-height: 1.3; }
   .stop h3 .town { font-weight: 400; color: var(--muted); }
   .stop.active h3 { color: var(--maple); }
@@ -457,12 +467,12 @@
 
   // kind: "start" and "end" are Logan, "pickup" is listed but not on the map, "stop" is numbered and mapped
   const DAY = [
-    { kind: "start", time: "7:00 AM", name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
+    { kind: "start", drive: 0, stay: 30, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
       lat: 42.3656, lng: -71.0096, note: "Pick up rental car",
       cost: { what: "Rental car", detail: "Insurance, tolls and gas", lo: 55, hi: 65, per: "person", shared: true } },
-    { kind: "pickup", time: "7:20 AM", name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA",
+    { kind: "pickup", drive: 11, stay: 10, name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA",
       lat: 42.3625, lng: -71.0862, note: "Pick up Cambridge group" },
-    { kind: "stop", time: "9:45 AM", name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH",
+    { kind: "stop", drive: 133, stay: 30, name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH",
       lat: 43.6525, lng: -71.5390, note: "Coffee and cider donuts", url: "https://www.moultonfarm.com",
       cost: { what: "Coffee and cider donuts", detail: "Moulton Farm", lo: 6, hi: 10, per: "person", est: true },
       photos: [
@@ -470,21 +480,21 @@
         P("moulton-2", "Whoopie pies"),
         P("moulton-3", "The America 250 corn maze from above")
       ] },
-    { kind: "stop", time: "10:45 AM", name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH",
+    { kind: "stop", drive: 44, stay: 30, name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH",
       lat: 43.7400, lng: -71.3250, note: "View and coffee", url: "https://www.castleintheclouds.org",
       cost: { what: "Coffee", detail: "Castle in the Clouds, Carriage House", lo: 4, hi: 6, per: "person", est: true },
       photos: [
         P("castle-1", "The Lucknow mansion in fall color"),
         P("castle-2", "Lake Winnipesaukee and its islands")
       ] },
-    { kind: "stop", time: "11:55 AM", name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH",
+    { kind: "stop", drive: 50, stay: 20, name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH",
       lat: 43.9000, lng: -71.2410, note: "", url: "https://chocorualake.org/chocorua-lake",
       photos: [
         P("chocorua-lake-1", "Mount Chocorua reflected in the lake"),
         P("chocorua-lake-2", "A calm morning on the lake"),
         P("chocorua-lake-3", "Fall color along the shore")
       ] },
-    { kind: "stop", time: "12:45 PM", name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH",
+    { kind: "stop", drive: 38, stay: 60, name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH",
       lat: 44.0720, lng: -71.1330, note: "Stop for lunch", url: "https://www.moatmountain.com",
       cost: { what: "Lunch", detail: "Moat Mountain Smokehouse", lo: 15, hi: 25, per: "person", est: true },
       photos: [
@@ -492,30 +502,32 @@
         P("moat-mountain-2", "Barbecue and a beer flight", "", "", "", { portrait: true }),
         P("moat-mountain-3", "The beer garden", "", "", "", { portrait: true })
       ] },
-    { kind: "stop", time: "2:05 PM", name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH",
+    { kind: "stop", drive: 29, stay: 20, name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH",
       lat: 43.9917, lng: -71.2420, note: "Short stop on the Kancamagus", url: "https://www.fs.usda.gov/r09/whitemountain/recreation/albany-covered-bridge",
       photos: [
         P("albany-covered-bridge-1", "Red maples over the Swift River and the bridge"),
         P("albany-covered-bridge-2", "The bridge entrance under the maples"),
         P("albany-covered-bridge-3", "The bridge over the Swift River")
       ] },
-    { kind: "stop", time: "2:40 PM", name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH",
+    { kind: "stop", drive: 24, stay: 35, name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH",
       lat: 43.9975, lng: -71.3940, note: "Walk to the falls", url: "https://www.trailfinder.info/trails/trail/sabbaday-falls",
       cost: { what: "Parking day pass", detail: "Sabbaday Falls, $5 per car", lo: 5, hi: 5, per: "car", shared: true },
       photos: [
         P("sabbaday-falls-1", "The falls and the viewing platform"),
         P("sabbaday-falls-2", "The pool below the falls", "", "", "", { portrait: true })
       ] },
-    { kind: "stop", time: "5:30 PM", name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH",
+    { kind: "stop", drive: 142, stay: 60, name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH",
       lat: 43.0773, lng: -70.7577, note: "Stop for dinner", url: "https://www.goportsmouthnh.com",
       cost: { what: "Dinner", detail: "Portsmouth", lo: 20, hi: 30, per: "person", est: true },
       photos: [
         P("portsmouth-1", "Fall reflections in Portsmouth")
       ] },
-    { kind: "end", time: "7:40 PM", name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
+    { kind: "end", drive: 76, stay: 0, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
       lat: 42.3656, lng: -71.0096, note: "Drop off rental car" }
   ];
+  const START = 7 * 60;          // 7:00 AM, when the rental counter opens
   const PEOPLE_PER_CAR = 5;
+  // drive = minutes driving to reach a stop, stay = minutes spent there. All times below follow from these.
   // ---------------------------------
 
   // Stops are numbered 1–7 and colored green to maple; the drive into a stop shares its color
@@ -529,8 +541,31 @@
   const narrow = window.matchMedia("(max-width: 960px)");
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const esc = s => s.replace(/"/g, "&quot;");
-  const fmtDur = m => m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+  const fmtDur = m => m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`;
   const legColor = j => colorOf(j + 1) || css("--neutral-leg");   // leg j drives into DAY[j + 1]
+
+  // ---- Schedule: arrival and leave times from drive + stay minutes ----
+  {
+    let t = START;
+    DAY.forEach((d, i) => {
+      if (i > 0) t += d.drive;
+      d.arrive = t;
+      d.leave = d.stay ? t + d.stay : null;
+      t += d.stay;
+    });
+  }
+  const clock = m => {
+    m = Math.round(m / 5) * 5;
+    const h24 = Math.floor(m / 60) % 24;
+    return { text: `${h24 % 12 || 12}:${String(m % 60).padStart(2, "0")}`, ap: h24 < 12 ? "AM" : "PM" };
+  };
+  const fmtTime = m => { const c = clock(m); return `${c.text} ${c.ap}`; };
+  const fmtSpan = d => {
+    if (!d.leave) return fmtTime(d.arrive);
+    const a = clock(d.arrive), b = clock(d.leave);
+    return a.ap === b.ap ? `${a.text}–${b.text} ${b.ap}` : `${a.text} ${a.ap} – ${b.text} ${b.ap}`;
+  };
+  DAY.forEach(d => { d.time = fmtTime(d.arrive); });
 
   const LEAF = "M50 4 57 18 65 14 62 34 74 24 78 30 90 28 84 42 94 46 74 62 77 70 55 66 53 80 53 96 47 96 47 80 45 66 23 70 26 62 6 46 16 42 10 28 22 30 26 24 38 34 35 14 43 18Z";
   const leafSvg = (fill, label = "", ink = "#fff") =>
@@ -544,10 +579,9 @@
   const credit = p => p.by ? `Photo: ${p.by}, <a href="${p.page}" target="_blank" rel="noopener">${p.lic}</a>` : "";
 
   document.getElementById("trip-date").textContent = TRIP_DATE;
-  document.getElementById("full-route").href = "https://www.google.com/maps/dir/?api=1&travelmode=driving"
-    + "&origin=" + encodeURIComponent(DAY[0].q)
-    + "&destination=" + encodeURIComponent(DAY[DAY.length - 1].q)
-    + "&waypoints=" + encodeURIComponent(DAY.slice(1, -1).map(d => d.q).join("|"));
+  // Every stop goes in the link's path (the phone app ignores most stops passed the other way); 3e0 = driving
+  document.getElementById("full-route").href = "https://www.google.com/maps/dir/"
+    + DAY.map(d => encodeURIComponent(d.q).replace(/%20/g, "+")).join("/") + "/data=!4m2!4m1!3e0";
 
   // ---- Falling leaves in the header ----
   (function () {
@@ -621,7 +655,7 @@
     html += `<li class="stop${has ? " has-photo" : ""}" id="day-${i}" data-sync="${i}">
       ${badge(i)}
       <div>
-        <div class="time">${d.time}</div>
+        <div class="time">${fmtSpan(d)}${d.stay ? `<span class="stay">${fmtDur(d.stay)}</span>` : ""}</div>
         <h3><button type="button" class="stop-title"${has ? ` aria-expanded="false" aria-controls="gallery-${i}"` : ""}>${d.name}</button>${d.town ? ` <span class="town">${d.town}</span>` : ""}</h3>
         ${has ? `<div class="gallery" id="gallery-${i}"></div>` : ""}
         ${d.note ? `<p>${d.note}</p>` : ""}
@@ -763,7 +797,8 @@
     .then(() => {
       document.querySelectorAll("button[data-leg-btn]").forEach(b => {
         const l = legs[+b.dataset.legBtn];
-        b.textContent = l.min != null ? `${fmtDur(l.min)} · ${l.mi} mi` : "Drive";
+        const drive = fmtDur(DAY[l.j + 1].drive);
+        b.textContent = l.mi != null ? `${drive} · ${l.mi} mi` : drive;
       });
     });
 
@@ -797,14 +832,14 @@
       type: "geojson",
       data: { type: "FeatureCollection", features: legs.map(l => ({
         type: "Feature", id: l.j,
-        properties: { leg: l.j, color: legColor(l.j), label: l.min != null ? fmtDur(l.min) : "" },
+        properties: { leg: l.j, color: legColor(l.j), label: fmtDur(DAY[l.j + 1].drive) },
         geometry: { type: "LineString", coordinates: l.coords } })) }
     });
     map.addSource("leg-mids", {
       type: "geojson",
       data: { type: "FeatureCollection", features: legs.map(l => ({
         type: "Feature", id: l.j,
-        properties: { label: l.min != null ? fmtDur(l.min) : "" },
+        properties: { label: fmtDur(DAY[l.j + 1].drive) },
         geometry: { type: "Point", coordinates: midpoint(l.coords) } })) }
     });
     const focus = ["boolean", ["feature-state", "focus"], false];
@@ -842,7 +877,7 @@
     map.on("mousemove", "legs-hit", e => {
       const l = legs[e.features[0].properties.leg];
       map.getCanvas().style.cursor = "pointer";
-      legTip.setLngLat(e.lngLat).setText(`${DAY[l.j].name} → ${DAY[l.j + 1].name}${l.min != null ? ` · ${fmtDur(l.min)}` : ""}`).addTo(map);
+      legTip.setLngLat(e.lngLat).setText(`${DAY[l.j].name} → ${DAY[l.j + 1].name} · ${fmtDur(DAY[l.j + 1].drive)}`).addTo(map);
       setHoverLeg(l.j);
     });
     map.on("mouseleave", "legs-hit", () => {
