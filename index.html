@@ -467,12 +467,12 @@
 
   // kind: "start" and "end" are Logan, "pickup" is listed but not on the map, "stop" is numbered and mapped
   const DAY = [
-    { kind: "start", drive: 0, stay: 30, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
+    { kind: "start", drive: 0, stay: 30, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport", gid: "0x89e37014d5da4937:0xc9394c31f2d5144",
       lat: 42.3656, lng: -71.0096, note: "Pick up rental car",
       cost: { what: "Rental car", detail: "Insurance, tolls and gas", lo: 55, hi: 65, per: "person", shared: true } },
-    { kind: "pickup", drive: 11, stay: 10, name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA",
+    { kind: "pickup", drive: 11, stay: 10, name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA", gid: "0x89e370aeb68b7f17:0xe23345d0fe2cd49a",
       lat: 42.3625, lng: -71.0862, note: "Pick up Cambridge group" },
-    { kind: "stop", drive: 133, stay: 30, name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH",
+    { kind: "stop", drive: 133, stay: 30, name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH", gid: "0x4cb3476ee441c9d3:0xf5c22be85d6bfcf1",
       lat: 43.6525, lng: -71.5390, note: "Coffee and cider donuts", url: "https://www.moultonfarm.com",
       cost: { what: "Coffee and cider donuts", detail: "Moulton Farm", lo: 6, hi: 10, per: "person", est: true },
       photos: [
@@ -480,21 +480,21 @@
         P("moulton-2", "Whoopie pies"),
         P("moulton-3", "The America 250 corn maze from above")
       ] },
-    { kind: "stop", drive: 44, stay: 30, name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH",
+    { kind: "stop", drive: 44, stay: 30, name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH", gid: "0x4cb33dd62f898745:0x69f1aeea12005a5c",
       lat: 43.7400, lng: -71.3250, note: "View and coffee", url: "https://www.castleintheclouds.org",
       cost: { what: "Coffee", detail: "Castle in the Clouds, Carriage House", lo: 4, hi: 6, per: "person", est: true },
       photos: [
         P("castle-1", "The Lucknow mansion in fall color"),
         P("castle-2", "Lake Winnipesaukee and its islands")
       ] },
-    { kind: "stop", drive: 50, stay: 20, name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH",
+    { kind: "stop", drive: 50, stay: 20, name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH", gid: "0x4cb30d9f18794e21:0xbca429e5621e51ba",
       lat: 43.9000, lng: -71.2410, note: "", url: "https://chocorualake.org/chocorua-lake",
       photos: [
         P("chocorua-lake-1", "Mount Chocorua reflected in the lake"),
         P("chocorua-lake-2", "A calm morning on the lake"),
         P("chocorua-lake-3", "Fall color along the shore")
       ] },
-    { kind: "stop", drive: 38, stay: 60, name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH",
+    { kind: "stop", drive: 38, stay: 60, name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH", gid: "0x4cb3a196558e24e5:0x6bfd66398bffc5a4",
       lat: 44.0720, lng: -71.1330, note: "Stop for lunch", url: "https://www.moatmountain.com",
       cost: { what: "Lunch", detail: "Moat Mountain Smokehouse", lo: 15, hi: 25, per: "person", est: true },
       photos: [
@@ -502,27 +502,27 @@
         P("moat-mountain-2", "Barbecue and a beer flight", "", "", "", { portrait: true }),
         P("moat-mountain-3", "The beer garden", "", "", "", { portrait: true })
       ] },
-    { kind: "stop", drive: 29, stay: 20, name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH",
+    { kind: "stop", drive: 29, stay: 20, name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH", gid: "0x4cb375258f192c45:0x701ff193275bed6d",
       lat: 43.9917, lng: -71.2420, note: "Short stop on the Kancamagus", url: "https://www.fs.usda.gov/r09/whitemountain/recreation/albany-covered-bridge",
       photos: [
         P("albany-covered-bridge-1", "Red maples over the Swift River and the bridge"),
         P("albany-covered-bridge-2", "The bridge entrance under the maples"),
         P("albany-covered-bridge-3", "The bridge over the Swift River")
       ] },
-    { kind: "stop", drive: 24, stay: 35, name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH",
+    { kind: "stop", drive: 24, stay: 35, name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH", gid: "0x4cb376d81b55e651:0x569bd90f549f7c9c",
       lat: 43.9975, lng: -71.3940, note: "Walk to the falls", url: "https://www.trailfinder.info/trails/trail/sabbaday-falls",
       cost: { what: "Parking day pass", detail: "Sabbaday Falls, $5 per car", lo: 5, hi: 5, per: "car", shared: true },
       photos: [
         P("sabbaday-falls-1", "The falls and the viewing platform"),
         P("sabbaday-falls-2", "The pool below the falls", "", "", "", { portrait: true })
       ] },
-    { kind: "stop", drive: 142, stay: 60, name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH",
+    { kind: "stop", drive: 142, stay: 60, name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH", gid: "0x89e2bf0c6cc94bb7:0xa7c64f7013e6ad1f",
       lat: 43.0773, lng: -70.7577, note: "Stop for dinner", url: "https://www.goportsmouthnh.com",
       cost: { what: "Dinner", detail: "Portsmouth", lo: 20, hi: 30, per: "person", est: true },
       photos: [
         P("portsmouth-1", "Fall reflections in Portsmouth")
       ] },
-    { kind: "end", drive: 76, stay: 0, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport",
+    { kind: "end", drive: 76, stay: 0, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport", gid: "0x89e37014d5da4937:0xc9394c31f2d5144",
       lat: 42.3656, lng: -71.0096, note: "Drop off rental car" }
   ];
   const START = 7 * 60;          // 7:00 AM, when the rental counter opens
@@ -579,9 +579,16 @@
   const credit = p => p.by ? `Photo: ${p.by}, <a href="${p.page}" target="_blank" rel="noopener">${p.lic}</a>` : "";
 
   document.getElementById("trip-date").textContent = TRIP_DATE;
-  // Every stop goes in the link's path (the phone app ignores most stops passed the other way); 3e0 = driving
-  document.getElementById("full-route").href = "https://www.google.com/maps/dir/"
-    + DAY.map(d => encodeURIComponent(d.q).replace(/%20/g, "+")).join("/") + "/data=!4m2!4m1!3e0";
+  // Google Maps link: every stop in the path, Google's place IDs (gid) so the app doesn't have to look them up,
+  // and a map view over the whole route so the app opens on the route instead of the first stop. 3e0 = driving.
+  {
+    const lats = DAY.map(d => d.lat), lngs = DAY.map(d => d.lng);
+    const view = `@${((Math.min(...lats) + Math.max(...lats)) / 2).toFixed(4)},${((Math.min(...lngs) + Math.max(...lngs)) / 2).toFixed(4)},7z`;
+    const ids = DAY.every(d => d.gid) ? DAY.map(d => `!1m2!1m1!1s${d.gid}`).join("") : "";
+    const data = ids ? `!4m${3 * DAY.length + 2}!4m${3 * DAY.length + 1}${ids}!3e0` : "!4m2!4m1!3e0";
+    document.getElementById("full-route").href = "https://www.google.com/maps/dir/"
+      + DAY.map(d => encodeURIComponent(d.q).replace(/%20/g, "+")).join("/") + `/${view}/data=${data}`;
+  }
 
   // ---- Falling leaves in the header ----
   (function () {
