@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Foliage day trip</title>
+<title>Foliage day trip: Lakes Region and Conway</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍁</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -158,7 +158,19 @@
   }
   .chip-btn:hover { border-color: var(--ink); }
   #overview { position: absolute; right: .75rem; top: .75rem; display: flex; align-items: center; gap: .4rem; height: 2.5rem; }
-  .header-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .header-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .6rem; }
+  .plan-switch {
+    display: inline-flex; padding: 3px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line);
+  }
+  .plan-switch button {
+    border: 0; background: none; cursor: pointer; border-radius: 999px;
+    padding: .32rem .8rem; font-size: .82rem; font-weight: 500; color: var(--muted);
+  }
+  .plan-switch button b { font-weight: 700; color: var(--ink); margin-right: .2rem; }
+  .plan-switch button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+  .plan-switch button[aria-pressed="true"] b { color: var(--bg); }
+  .plan-switch button:not([aria-pressed="true"]):hover { background: var(--sunk); }
 
   /* Budget: a ticket stub with a perforated total */
   .budget { margin-top: 2.75rem; scroll-margin-top: 1.5rem; }
@@ -204,6 +216,12 @@
   .leaf text { font: 800 46px "Public Sans", sans-serif; text-anchor: middle; dominant-baseline: central; }
   .marker { width: 44px; height: 44px; cursor: pointer; transition: opacity .25s ease; }
   .marker.dim { opacity: .35; }
+  .pin-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.3);
+    display: none; pointer-events: none;
+  }
+  .pin-dot.show { display: block; }
   .marker .leaf {
     width: 44px; height: 44px;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,.4));
@@ -392,8 +410,12 @@
   <div class="header-inner">
     <p class="date" id="trip-date"></p>
     <h1>Foliage <em>day trip</em></h1>
-    <p class="sub">Lakes Region · Chocorua Lake · Kancamagus · Portsmouth</p>
+    <p class="sub" id="plan-sub">Lakes Region · Chocorua Lake · Kancamagus · Portsmouth</p>
     <div class="header-links">
+      <div class="plan-switch" role="group" aria-label="Choose a plan">
+        <button type="button" data-plan="a" aria-pressed="true"><b>Plan A</b> Lakes Region</button>
+        <button type="button" data-plan="b" aria-pressed="false"><b>Plan B</b> Notches loop</button>
+      </div>
       <a class="maplink" id="full-route" target="_blank" rel="noopener">
         <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
         Google Maps
@@ -459,101 +481,146 @@
 <script>
   // ---- Edit trip details here ----
   const TRIP_DATE = "Sunday, October 18, 2026";
+  const START = 7 * 60;          // 7:00 AM, when the rental counter opens
+  const PEOPLE_PER_CAR = 5;
 
   // Photos live in the photos/ folder next to this page: name.jpg and name-thumb.jpg.
   // To add your own, drop the two files there and list them on the stop.
   const P = (file, cap, by, lic, page, opts = {}) => ({ file, cap, by, lic, page, ...opts });
-  const C = "https://commons.wikimedia.org/wiki/File:";
 
-  // kind: "start" and "end" are Logan, "pickup" is listed but not on the map, "stop" is numbered and mapped
-  const DAY = [
-    { kind: "start", drive: 0, stay: 30, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport", gid: "0x89e37014d5da4937:0xc9394c31f2d5144",
-      lat: 42.3656, lng: -71.0096, note: "Pick up rental car",
-      cost: { what: "Rental car", detail: "Insurance, tolls and gas", lo: 55, hi: 65, per: "person", shared: true } },
-    { kind: "pickup", drive: 11, stay: 10, name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA", gid: "0x89e370aeb68b7f17:0xe23345d0fe2cd49a",
-      lat: 42.3625, lng: -71.0862, note: "Pick up Cambridge group" },
-    { kind: "stop", drive: 133, stay: 30, name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH", gid: "0x4cb3476ee441c9d3:0xf5c22be85d6bfcf1",
-      lat: 43.6525, lng: -71.5390, note: "Coffee and cider donuts", url: "https://www.moultonfarm.com",
-      cost: { what: "Coffee and cider donuts", detail: "Moulton Farm", lo: 6, hi: 10, per: "person", est: true },
-      photos: [
-        P("moulton-1", "Mums and pumpkins at the farm stand"),
-        P("moulton-2", "Whoopie pies"),
-        P("moulton-3", "The America 250 corn maze from above")
-      ] },
-    { kind: "stop", drive: 44, stay: 30, name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH", gid: "0x4cb33dd62f898745:0x69f1aeea12005a5c",
-      lat: 43.7400, lng: -71.3250, note: "View and coffee", url: "https://www.castleintheclouds.org",
-      cost: { what: "Coffee", detail: "Castle in the Clouds, Carriage House", lo: 4, hi: 6, per: "person", est: true },
-      photos: [
-        P("castle-1", "The Lucknow mansion in fall color"),
-        P("castle-2", "Lake Winnipesaukee and its islands")
-      ] },
-    { kind: "stop", drive: 50, stay: 20, name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH", gid: "0x4cb30d9f18794e21:0xbca429e5621e51ba",
-      lat: 43.9000, lng: -71.2410, note: "", url: "https://chocorualake.org/chocorua-lake",
-      photos: [
-        P("chocorua-lake-1", "Mount Chocorua reflected in the lake"),
-        P("chocorua-lake-2", "A calm morning on the lake"),
-        P("chocorua-lake-3", "Fall color along the shore")
-      ] },
-    { kind: "stop", drive: 38, stay: 60, name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH", gid: "0x4cb3a196558e24e5:0x6bfd66398bffc5a4",
-      lat: 44.0720, lng: -71.1330, note: "Stop for lunch", url: "https://www.moatmountain.com",
-      cost: { what: "Lunch", detail: "Moat Mountain Smokehouse", lo: 15, hi: 25, per: "person", est: true },
-      photos: [
-        P("moat-mountain-1", "Moat Mountain IPA with a fall view", "", "", "", { portrait: true }),
-        P("moat-mountain-2", "Barbecue and a beer flight", "", "", "", { portrait: true }),
-        P("moat-mountain-3", "The beer garden", "", "", "", { portrait: true })
-      ] },
-    { kind: "stop", drive: 29, stay: 20, name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH", gid: "0x4cb375258f192c45:0x701ff193275bed6d",
-      lat: 43.9917, lng: -71.2420, note: "Short stop on the Kancamagus", url: "https://www.fs.usda.gov/r09/whitemountain/recreation/albany-covered-bridge",
-      photos: [
-        P("albany-covered-bridge-1", "Red maples over the Swift River and the bridge"),
-        P("albany-covered-bridge-2", "The bridge entrance under the maples"),
-        P("albany-covered-bridge-3", "The bridge over the Swift River")
-      ] },
-    { kind: "stop", drive: 24, stay: 35, name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH", gid: "0x4cb376d81b55e651:0x569bd90f549f7c9c",
-      lat: 43.9975, lng: -71.3940, note: "Walk to the falls", url: "https://www.trailfinder.info/trails/trail/sabbaday-falls",
-      cost: { what: "Parking day pass", detail: "Sabbaday Falls, $5 per car", lo: 5, hi: 5, per: "car", shared: true },
-      photos: [
-        P("sabbaday-falls-1", "The falls and the viewing platform"),
-        P("sabbaday-falls-2", "The pool below the falls", "", "", "", { portrait: true })
-      ] },
-    { kind: "stop", drive: 142, stay: 60, name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH", gid: "0x89e2bf0c6cc94bb7:0xa7c64f7013e6ad1f",
-      lat: 43.0773, lng: -70.7577, note: "Stop for dinner", url: "https://www.goportsmouthnh.com",
-      cost: { what: "Dinner", detail: "Portsmouth", lo: 20, hi: 30, per: "person", est: true },
-      photos: [
-        P("portsmouth-1", "Fall reflections in Portsmouth")
-      ] },
-    { kind: "end", drive: 76, stay: 0, name: "Boston Logan International Airport", town: "", q: "Boston Logan International Airport", gid: "0x89e37014d5da4937:0xc9394c31f2d5144",
-      lat: 42.3656, lng: -71.0096, note: "Drop off rental car" }
-  ];
-  const START = 7 * 60;          // 7:00 AM, when the rental counter opens
-  const PEOPLE_PER_CAR = 5;
-  // drive = minutes driving to reach a stop, stay = minutes spent there. All times below follow from these.
+  // lat/lng is the exact spot you go to (entrance, parking lot or viewpoint).
+  // q and gid tell Google Maps which place it is; gmaps: false leaves a stop out of the Google Maps link.
+  const LOGAN = { name: "Boston Logan International Airport", town: "", q: "Logan Airport Rental Car Center, East Boston, MA",
+    gid: "0x89e371c54c71e1b5:0xcdd1a488e4bb57af", lat: 42.36706, lng: -71.03094 };
+  const KENDALL = { kind: "pickup", name: "Kendall Square", town: "Cambridge", q: "Kendall Square, Cambridge, MA",
+    gid: "0x89e370aeb68b7f17:0xe23345d0fe2cd49a", lat: 42.36249, lng: -71.08617, note: "Pick up Cambridge group" };
+  const MOULTON = { kind: "stop", name: "Moulton Farm", town: "Meredith", q: "Moulton Farm, Meredith, NH",
+    gid: "0x4cb3476ee441c9d3:0xf5c22be85d6bfcf1", lat: 43.67723, lng: -71.47158,
+    note: "Coffee and cider donuts", url: "https://www.moultonfarm.com",
+    cost: { what: "Coffee and cider donuts", detail: "Moulton Farm", lo: 6, hi: 10, per: "person", est: true },
+    photos: [
+      P("moulton-1", "Mums and pumpkins at the farm stand"),
+      P("moulton-2", "Whoopie pies"),
+      P("moulton-3", "The America 250 corn maze from above")
+    ] };
+  const SABBADAY = { kind: "stop", name: "Sabbaday Falls", town: "Albany", q: "Sabbaday Falls, Albany, NH",
+    gid: "0x4cb376d81b55e651:0x569bd90f549f7c9c", lat: 43.99742, lng: -71.39311,
+    note: "Walk to the falls", url: "https://www.trailfinder.info/trails/trail/sabbaday-falls",
+    photos: [
+      P("sabbaday-falls-1", "The falls and the viewing platform"),
+      P("sabbaday-falls-2", "The pool below the falls", "", "", "", { portrait: true })
+    ] };
+  const pickUpCar = stay => ({ ...LOGAN, kind: "start", drive: 0, stay, note: "Pick up rental car",
+    cost: { what: "Rental car", detail: "Insurance, tolls and gas", lo: 55, hi: 65, per: "person", shared: true } });
+  const dropOffCar = drive => ({ ...LOGAN, kind: "end", drive, stay: 0, note: "Drop off rental car" });
+
+  // drive = minutes driving to reach a stop, stay = minutes spent there. All times follow from these.
+  const PLANS = {
+    a: { label: "Plan A", tag: "Lakes Region", sub: "Lakes Region · Chocorua Lake · Kancamagus · Portsmouth", day: [
+      pickUpCar(30),
+      { ...KENDALL, drive: 14, stay: 10 },
+      { ...MOULTON, drive: 139, stay: 30 },
+      { kind: "stop", drive: 32, stay: 30, name: "Castle in the Clouds", town: "Moultonborough", q: "Castle in the Clouds, Moultonborough, NH",
+        gid: "0x4cb33dd62f898745:0x69f1aeea12005a5c", lat: 43.72689, lng: -71.32311,
+        note: "View and coffee", url: "https://www.castleintheclouds.org",
+        cost: { what: "Coffee", detail: "Castle in the Clouds, Carriage House", lo: 4, hi: 6, per: "person", est: true },
+        photos: [
+          P("castle-1", "The Lucknow mansion in fall color"),
+          P("castle-2", "Lake Winnipesaukee and its islands")
+        ] },
+      { kind: "stop", drive: 39, stay: 20, name: "Chocorua Lake", town: "Tamworth", q: "Chocorua Lake, Tamworth, NH",
+        gid: "0x4cb30d9f18794e21:0xbca429e5621e51ba", lat: 43.90556, lng: -71.23306,
+        note: "", url: "https://chocorualake.org/chocorua-lake",
+        photos: [
+          P("chocorua-lake-1", "Mount Chocorua reflected in the lake"),
+          P("chocorua-lake-2", "A calm morning on the lake"),
+          P("chocorua-lake-3", "Fall color along the shore")
+        ] },
+      { kind: "stop", drive: 31, stay: 60, name: "Moat Mountain Smokehouse", town: "North Conway", q: "Moat Mountain Smokehouse, North Conway, NH",
+        gid: "0x4cb3a196558e24e5:0x6bfd66398bffc5a4", lat: 44.06848, lng: -71.14359,
+        note: "Stop for lunch", url: "https://www.moatmountain.com",
+        cost: { what: "Lunch", detail: "Moat Mountain Smokehouse", lo: 15, hi: 25, per: "person", est: true },
+        photos: [
+          P("moat-mountain-1", "Moat Mountain IPA with a fall view", "", "", "", { portrait: true }),
+          P("moat-mountain-2", "Barbecue and a beer flight", "", "", "", { portrait: true }),
+          P("moat-mountain-3", "The beer garden", "", "", "", { portrait: true })
+        ] },
+      { kind: "stop", drive: 29, stay: 20, name: "Albany Covered Bridge", town: "Albany", q: "Albany Covered Bridge, Albany, NH",
+        gid: "0x4cb375258f192c45:0x701ff193275bed6d", lat: 44.00491, lng: -71.24138,
+        note: "Short stop on the Kancamagus", url: "https://www.fs.usda.gov/r09/whitemountain/recreation/albany-covered-bridge",
+        photos: [
+          P("albany-covered-bridge-1", "Red maples over the Swift River and the bridge"),
+          P("albany-covered-bridge-2", "The bridge entrance under the maples"),
+          P("albany-covered-bridge-3", "The bridge over the Swift River")
+        ] },
+      { ...SABBADAY, drive: 17, stay: 35,
+        cost: { what: "Parking day pass", detail: "Sabbaday Falls, $5 per car", lo: 5, hi: 5, per: "car", shared: true } },
+      { kind: "stop", drive: 143, stay: 60, name: "Portsmouth", town: "NH", q: "Market Square, Portsmouth, NH",
+        gid: "0x89e2bf0c6cc94bb7:0xa7c64f7013e6ad1f", lat: 43.07700, lng: -70.75775,
+        note: "Stop for dinner", url: "https://www.goportsmouthnh.com",
+        cost: { what: "Dinner", detail: "Portsmouth", lo: 20, hi: 30, per: "person", est: true },
+        photos: [
+          P("portsmouth-1", "Fall reflections in Portsmouth")
+        ] },
+      dropOffCar(76)
+    ] },
+    b: { label: "Plan B", tag: "Notches loop", sub: "Franconia Notch · Crawford Notch · Bear Notch · Kancamagus", day: [
+      pickUpCar(30),
+      { ...KENDALL, drive: 14, stay: 10 },
+      { ...MOULTON, drive: 139, stay: 30 },
+      { kind: "stop", drive: 71, stay: 20, name: "Echo Lake & Artist's Bluff", town: "Franconia Notch", q: "Artists Bluff Trailhead, Franconia, NH",
+        gid: "0x4cb47c6350a57ed5:0x60d8fc266aa22ed1", lat: 44.17983, lng: -71.70194,
+        note: "View of Echo Lake and Cannon Mountain", url: "https://www.nhstateparks.org/find-parks-trails/franconia-notch-state-park",
+        photos: [
+          P("artists-bluff-1", "Echo Lake and Cannon Mountain from Artist's Bluff"),
+          P("artists-bluff-2", "Echo Lake from above", "", "", "", { portrait: true })
+        ] },
+      { kind: "stop", drive: 13, stay: 75, name: "Polly's Pancake Parlor", town: "Sugar Hill", q: "Polly's Pancake Parlor, Sugar Hill, NH",
+        gid: "0x4cb4647021849b77:0xfd4e5a88789a5023", lat: 44.22133, lng: -71.77494,
+        note: "Stop for lunch", url: "https://pollyspancakeparlor.com",
+        cost: { what: "Lunch", detail: "Polly's Pancake Parlor", lo: 18, hi: 28, per: "person", est: true },
+        photos: [
+          P("pollys-1", "Pancakes at Polly's, served since 1938", "", "", "", { portrait: true })
+        ] },
+      { kind: "stop", drive: 42, stay: 20, name: "Willey House Historic Site", town: "Crawford Notch", q: "Willey House Historic Site, Crawford Notch, NH",
+        gid: "0x4cb385b682fe3813:0xa922c38cd9bbe165", lat: 44.18212, lng: -71.39916,
+        note: "Crawford Notch history and views", url: "https://www.nhstateparks.org/find-parks-trails/crawford-notch-state-park/",
+        photos: [
+          P("willey-house-1", "Fall color in Crawford Notch")
+        ] },
+      { kind: "stop", drive: 26, stay: 10, name: "Bear Notch Road overlooks", town: "Bartlett", q: "Bear Notch Road, Bartlett, NH",
+        lat: 44.04539, lng: -71.30596, note: "Mountain overlooks", gmaps: false,
+        photos: [
+          P("bear-notch-1", "Driving through the fall color"),
+          P("bear-notch-2", "A mountain road from above", "", "", "", { portrait: true })
+        ] },
+      { ...SABBADAY, drive: 14, stay: 35,
+        cost: { what: "National forest day pass", detail: "Sabbaday Falls and Lincoln Woods, $5 per car", lo: 5, hi: 5, per: "car", shared: true } },
+      { kind: "stop", drive: 26, stay: 30, name: "Lincoln Woods", town: "Lincoln", q: "Lincoln Woods Trailhead, Lincoln, NH",
+        gid: "0x4cb37fb640fc660b:0xea77b8611134e046", lat: 44.06354, lng: -71.58810,
+        note: "Suspension bridge over the river", url: "https://www.fs.usda.gov/r09/whitemountain/recreation/lincoln-woods-trailhead",
+        photos: [
+          P("lincoln-woods-1", "The suspension bridge over the Pemigewasset River", "", "", "", { portrait: true })
+        ] },
+      { kind: "stop", drive: 13, stay: 60, name: "Woodstock Inn Brewery", town: "North Woodstock", q: "Woodstock Inn Brewery, North Woodstock, NH",
+        gid: "0x4cb4822b91c88b93:0x1aea45ee5572e02e", lat: 44.03238, lng: -71.68710,
+        note: "Stop for dinner", url: "https://www.woodstockinnbrewery.com",
+        cost: { what: "Dinner", detail: "Woodstock Inn Brewery", lo: 20, hi: 30, per: "person", est: true },
+        photos: [
+          P("woodstock-inn-1", "The bar at Woodstock Inn Brewery")
+        ] },
+      dropOffCar(156)
+    ] }
+  };
   // ---------------------------------
 
-  // Stops are numbered 1–7 and colored green to maple; the drive into a stop shares its color
-  const COLORS = ["#2F7A55", "#6E9A3A", "#B5A22A", "#E0A21E", "#E07B1E", "#C8471E", "#A3221C"];
-  const STOP_IDX = DAY.map((d, i) => d.kind === "stop" ? i : -1).filter(i => i >= 0);
-  const numOf = i => STOP_IDX.indexOf(i);          // 0-based stop number, or -1
-  const colorOf = i => numOf(i) >= 0 ? COLORS[numOf(i)] : null;
-  const inkOf = i => (numOf(i) === 2 || numOf(i) === 3) ? "#2E2219" : "#fff";
-  const ALL_BOUNDS = [[-71.62, 42.30], [-70.70, 44.12]];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const narrow = window.matchMedia("(max-width: 960px)");
   const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const esc = s => s.replace(/"/g, "&quot;");
   const fmtDur = m => m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`;
-  const legColor = j => colorOf(j + 1) || css("--neutral-leg");   // leg j drives into DAY[j + 1]
 
   // ---- Schedule: arrival and leave times from drive + stay minutes ----
-  {
-    let t = START;
-    DAY.forEach((d, i) => {
-      if (i > 0) t += d.drive;
-      d.arrive = t;
-      d.leave = d.stay ? t + d.stay : null;
-      t += d.stay;
-    });
-  }
   const clock = m => {
     m = Math.round(m / 5) * 5;
     const h24 = Math.floor(m / 60) % 24;
@@ -565,7 +632,42 @@
     const a = clock(d.arrive), b = clock(d.leave);
     return a.ap === b.ap ? `${a.text}–${b.text} ${b.ap}` : `${a.text} ${a.ap} – ${b.text} ${b.ap}`;
   };
-  DAY.forEach(d => { d.time = fmtTime(d.arrive); });
+  Object.values(PLANS).forEach(plan => {
+    let t = START;
+    plan.day.forEach((d, i) => {
+      if (i > 0) t += d.drive;
+      d.arrive = t;
+      d.leave = d.stay ? t + d.stay : null;
+      d.time = fmtTime(t);
+      t += d.stay;
+    });
+  });
+
+  // ---- The plan on show ----
+  // Stops are numbered and colored green to maple; the drive into a stop shares its color
+  const ANCHORS = ["#2F7A55", "#6E9A3A", "#B5A22A", "#E0A21E", "#E07B1E", "#C8471E", "#A3221C"];
+  function palette(n) {
+    const rgb = h => [1, 3, 5].map(k => parseInt(h.slice(k, k + 2), 16));
+    return Array.from({ length: n }, (_, i) => {
+      const t = n < 2 ? 0 : i / (n - 1) * (ANCHORS.length - 1), lo = Math.floor(t), f = t - lo;
+      const a = rgb(ANCHORS[lo]), b = rgb(ANCHORS[Math.min(lo + 1, ANCHORS.length - 1)]);
+      return "#" + a.map((v, k) => Math.round(v + (b[k] - v) * f).toString(16).padStart(2, "0")).join("");
+    });
+  }
+  let planId = null, DAY = [], STOP_IDX = [], COLORS = [];
+  const numOf = i => STOP_IDX.indexOf(i);          // 0-based stop number, or -1
+  const colorOf = i => numOf(i) >= 0 ? COLORS[numOf(i)] : null;
+  const inkOf = i => {
+    const c = colorOf(i);
+    if (!c) return "#fff";
+    const [r, g, b] = [1, 3, 5].map(k => parseInt(c.slice(k, k + 2), 16));
+    return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.58 ? "#2E2219" : "#fff";
+  };
+  const legColor = j => colorOf(j + 1) || css("--neutral-leg");   // leg j drives into DAY[j + 1]
+  function planBounds() {
+    const lats = DAY.map(d => d.lat), lngs = DAY.map(d => d.lng);
+    return [[Math.min(...lngs) - .06, Math.min(...lats) - .06], [Math.max(...lngs) + .06, Math.max(...lats) + .06]];
+  }
 
   const LEAF = "M50 4 57 18 65 14 62 34 74 24 78 30 90 28 84 42 94 46 74 62 77 70 55 66 53 80 53 96 47 96 47 80 45 66 23 70 26 62 6 46 16 42 10 28 22 30 26 24 38 34 35 14 43 18Z";
   const leafSvg = (fill, label = "", ink = "#fff") =>
@@ -579,15 +681,17 @@
   const credit = p => p.by ? `Photo: ${p.by}, <a href="${p.page}" target="_blank" rel="noopener">${p.lic}</a>` : "";
 
   document.getElementById("trip-date").textContent = TRIP_DATE;
-  // Google Maps link: every stop in the path, Google's place IDs (gid) so the app doesn't have to look them up,
-  // and a map view over the whole route so the app opens on the route instead of the first stop. 3e0 = driving.
-  {
-    const lats = DAY.map(d => d.lat), lngs = DAY.map(d => d.lng);
+
+  // Google Maps link: every stop in the path, Google's place IDs and exact spots so the app doesn't have to
+  // look them up, and a map view over the whole route so the app opens on the route. 3e0 = driving.
+  // Google allows 10 points per link, so stops marked gmaps: false are left out (the route still passes them).
+  function gmapsLink() {
+    const pts = DAY.filter(d => d.gmaps !== false);
+    const lats = pts.map(d => d.lat), lngs = pts.map(d => d.lng);
     const view = `@${((Math.min(...lats) + Math.max(...lats)) / 2).toFixed(4)},${((Math.min(...lngs) + Math.max(...lngs)) / 2).toFixed(4)},7z`;
-    const ids = DAY.every(d => d.gid) ? DAY.map(d => `!1m2!1m1!1s${d.gid}`).join("") : "";
-    const data = ids ? `!4m${3 * DAY.length + 2}!4m${3 * DAY.length + 1}${ids}!3e0` : "!4m2!4m1!3e0";
-    document.getElementById("full-route").href = "https://www.google.com/maps/dir/"
-      + DAY.map(d => encodeURIComponent(d.q).replace(/%20/g, "+")).join("/") + `/${view}/data=${data}`;
+    const ids = pts.every(d => d.gid) ? pts.map(d => `!1m5!1m1!1s${d.gid}!2m2!1d${d.lng}!2d${d.lat}`).join("") : "";
+    const data = ids ? `!4m${6 * pts.length + 2}!4m${6 * pts.length + 1}${ids}!3e0` : "!4m2!4m1!3e0";
+    return "https://www.google.com/maps/dir/" + pts.map(d => encodeURIComponent(d.q).replace(/%20/g, "+")).join("/") + `/${view}/data=${data}`;
   }
 
   // ---- Falling leaves in the header ----
@@ -655,23 +759,31 @@
     if (d.kind === "pickup") return `<span class="badge pickup" aria-hidden="true">${PERSON}</span>`;
     return `<span class="badge plain" aria-hidden="true">${CAR}</span>`;
   };
-  let html = "";
-  DAY.forEach((d, i) => {
-    if (i > 0) html += `<li class="leg" data-leg="${i - 1}" style="--c:${legColor(i - 1)}"><button type="button" data-leg-btn="${i - 1}">Drive</button></li>`;
-    const has = d.photos && d.photos.length > 0;
-    html += `<li class="stop${has ? " has-photo" : ""}" id="day-${i}" data-sync="${i}">
-      ${badge(i)}
-      <div>
-        <div class="time">${fmtSpan(d)}${d.stay ? `<span class="stay">${fmtDur(d.stay)}</span>` : ""}</div>
-        <h3><button type="button" class="stop-title"${has ? ` aria-expanded="false" aria-controls="gallery-${i}"` : ""}>${d.name}</button>${d.town ? ` <span class="town">${d.town}</span>` : ""}</h3>
-        ${has ? `<div class="gallery" id="gallery-${i}"></div>` : ""}
-        ${d.note ? `<p>${d.note}</p>` : ""}
-        <div class="meta">${d.url ? `<a class="site" href="${d.url}" target="_blank" rel="noopener">${new URL(d.url).hostname.replace(/^www\./, "")}<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h5v5M9.5 2.5 3 9"/></svg></a>` : ""}</div>
-      </div>
-      ${has ? `<img class="thumb" src="${thumb(d.photos[0])}" alt="">` : ""}
-    </li>`;
-  });
-  tl.innerHTML = html;
+  function renderTimeline() {
+    let html = "";
+    DAY.forEach((d, i) => {
+      if (i > 0) html += `<li class="leg" data-leg="${i - 1}" style="--c:${legColor(i - 1)}"><button type="button" data-leg-btn="${i - 1}">${fmtDur(d.drive)}</button></li>`;
+      const has = d.photos && d.photos.length > 0;
+      html += `<li class="stop${has ? " has-photo" : ""}" id="day-${i}" data-sync="${i}">
+        ${badge(i)}
+        <div>
+          <div class="time">${fmtSpan(d)}${d.stay ? `<span class="stay">${fmtDur(d.stay)}</span>` : ""}</div>
+          <h3><button type="button" class="stop-title"${has ? ` aria-expanded="false" aria-controls="gallery-${i}"` : ""}>${d.name}</button>${d.town ? ` <span class="town">${d.town}</span>` : ""}</h3>
+          ${has ? `<div class="gallery" id="gallery-${i}"></div>` : ""}
+          ${d.note ? `<p>${d.note}</p>` : ""}
+          <div class="meta">${d.url ? `<a class="site" href="${d.url}" target="_blank" rel="noopener">${new URL(d.url).hostname.replace(/^www\./, "")}<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5h5v5M9.5 2.5 3 9"/></svg></a>` : ""}</div>
+        </div>
+        ${has ? `<img class="thumb" src="${thumb(d.photos[0])}" alt="">` : ""}
+      </li>`;
+    });
+    tl.innerHTML = html;
+  }
+  function labelLegs() {
+    document.querySelectorAll("button[data-leg-btn]").forEach(b => {
+      const j = +b.dataset.legBtn, l = legs && legs[j], drive = fmtDur(DAY[j + 1].drive);
+      b.textContent = l && l.mi != null ? `${drive} · ${l.mi} mi` : drive;
+    });
+  }
 
   function renderGallery(i, k = 0) {
     const d = DAY[i], p = d.photos[k];
@@ -685,7 +797,7 @@
   }
   function setOpen(i, open) {
     const el = document.getElementById("day-" + i), d = DAY[i];
-    if (!d.photos || !d.photos.length) return;
+    if (!el || !d.photos || !d.photos.length) return;
     if (open && !el.classList.contains("open")) renderGallery(i, 0);
     el.classList.toggle("open", open);
     el.querySelector(".stop-title").setAttribute("aria-expanded", open);
@@ -693,7 +805,6 @@
 
   // ---- Budget (per person) ----
   // Shared costs (the car and the parking pass) are split by PEOPLE_PER_CAR and marked with *
-  const COSTED = DAY.map((d, i) => d.cost ? i : -1).filter(i => i >= 0);
   const perPerson = (c, v) => c.per === "car" ? v / PEOPLE_PER_CAR : v;
   const money = v => "$" + (v % 1 ? v.toFixed(2) : v.toLocaleString("en-US"));
   const range = (lo, hi) => lo === hi ? money(lo) : `${money(lo)}–${money(hi).slice(1)}`;
@@ -703,20 +814,21 @@
     : `<span class="ico car">${CAR}</span>`;
 
   function renderCosts() {
+    const costed = DAY.map((d, i) => d.cost ? i : -1).filter(i => i >= 0);
     document.getElementById("ticket-leaf-path").setAttribute("d", LEAF);
-    document.getElementById("cost-lines").innerHTML = COSTED.map(i => {
+    document.getElementById("cost-lines").innerHTML = costed.map(i => {
       const c = DAY[i].cost;
       return `<li data-day="${i}" tabindex="0" role="button" aria-label="${c.what}, show ${DAY[i].name} on the itinerary">
         ${costIcon(i)}<span class="what">${c.what}${c.shared ? "*" : ""}<small>${c.detail}</small></span><span class="dots"></span><span class="amt">${costText(c)}</span></li>`;
     }).join("");
-    const all = COSTED.reduce((acc, i) => {
+    const all = costed.reduce((acc, i) => {
       const c = DAY[i].cost;
       return { lo: acc.lo + perPerson(c, c.lo), hi: acc.hi + perPerson(c, c.hi), est: acc.est || !!c.est };
     }, { lo: 0, hi: 0, est: false });
     document.getElementById("total-amt").textContent = (all.est ? "≈ " : "") + range(Math.round(all.lo), Math.round(all.hi));
     document.getElementById("fine").textContent = `* Assumes ${PEOPLE_PER_CAR} people per car.`;
     // Bar: each slice is that line's share of the typical total, in the stop's color
-    document.getElementById("ticket-bar").innerHTML = COSTED.map(i => {
+    document.getElementById("ticket-bar").innerHTML = costed.map(i => {
       const c = DAY[i].cost, mid = (perPerson(c, c.lo) + perPerson(c, c.hi)) / 2;
       return `<i style="flex-grow:${mid};background:${colorOf(i) || css("--neutral-leg")}" title="${c.what}"></i>`;
     }).join("");
@@ -748,7 +860,7 @@
   const map = new maplibregl.Map({
     container: "map",
     style: darkQuery.matches ? DARK : LIGHT,
-    bounds: ALL_BOUNDS,
+    bounds: [[-71.80, 42.30], [-70.70, 44.25]],
     fitBoundsOptions: { padding: 50 },
     cooperativeGestures: true,
     attributionControl: { compact: true }
@@ -771,43 +883,80 @@
   const airportEl = document.createElement("div");
   airportEl.className = "marker airport";
   airportEl.innerHTML = `<div class="airport-pin">${CAR}</div><div class="tag"><b>Boston Logan International Airport</b> · rental car</div>`;
-  new maplibregl.Marker({ element: airportEl }).setLngLat([DAY[0].lng, DAY[0].lat]).addTo(map);
+  const airportMarker = new maplibregl.Marker({ element: airportEl }).setLngLat([LOGAN.lng, LOGAN.lat]).addTo(map);
 
-  const markers = {};
-  STOP_IDX.forEach(i => {
-    const d = DAY[i], el = document.createElement("div");
-    el.className = "marker";
-    el.tabIndex = 0;
-    el.setAttribute("role", "button");
-    el.setAttribute("aria-label", `${numOf(i) + 1}. ${d.name}`);
-    el.innerHTML = `${leafSvg(colorOf(i), numOf(i) + 1, inkOf(i))}<div class="tag"><b>${d.name}</b> · ${d.time}</div>`;
-    const go = () => activate(String(i), { scroll: true, open: true });
-    el.addEventListener("click", e => { e.stopPropagation(); go(); });
-    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
-    el.addEventListener("mouseenter", () => document.getElementById("day-" + i).classList.add("hover"));
-    el.addEventListener("mouseleave", () => document.getElementById("day-" + i).classList.remove("hover"));
-    new maplibregl.Marker({ element: el }).setLngLat([d.lng, d.lat]).addTo(map);
-    markers[i] = el;
+  // Each numbered stop gets a leaf pin. When pins would cover each other (zoomed out), they step aside
+  // and a small dot stays on the exact spot.
+  let markers = {}, pinMarkers = {}, dotMarkers = {};
+  function buildMarkers() {
+    Object.values(pinMarkers).concat(Object.values(dotMarkers)).forEach(m => m.remove());
+    markers = {}; pinMarkers = {}; dotMarkers = {};
+    STOP_IDX.forEach(i => {
+      const d = DAY[i];
+      const dot = document.createElement("div");
+      dot.className = "pin-dot";
+      dot.style.background = colorOf(i);
+      dotMarkers[i] = new maplibregl.Marker({ element: dot }).setLngLat([d.lng, d.lat]).addTo(map);
+      const el = document.createElement("div");
+      el.className = "marker";
+      el.tabIndex = 0;
+      el.setAttribute("role", "button");
+      el.setAttribute("aria-label", `${numOf(i) + 1}. ${d.name}`);
+      el.innerHTML = `${leafSvg(colorOf(i), numOf(i) + 1, inkOf(i))}<div class="tag"><b>${d.name}</b> · ${d.time}</div>`;
+      const go = () => activate(String(i), { scroll: true, open: true });
+      el.addEventListener("click", e => { e.stopPropagation(); go(); });
+      el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+      el.addEventListener("mouseenter", () => document.getElementById("day-" + i).classList.add("hover"));
+      el.addEventListener("mouseleave", () => document.getElementById("day-" + i).classList.remove("hover"));
+      pinMarkers[i] = new maplibregl.Marker({ element: el }).setLngLat([d.lng, d.lat]).addTo(map);
+      markers[i] = el;
+    });
+    airportMarker.setLngLat([DAY[0].lng, DAY[0].lat]);
+    declutter();
+  }
+  function declutter() {
+    const ids = STOP_IDX.filter(i => pinMarkers[i]);
+    const pts = ids.map(i => map.project([DAY[i].lng, DAY[i].lat]));
+    const off = ids.map(() => ({ x: 0, y: 0 }));
+    const GAP = 36;
+    for (let round = 0; round < 40; round++) {
+      let moved = false;
+      for (let a = 0; a < ids.length; a++) for (let b = a + 1; b < ids.length; b++) {
+        let dx = (pts[b].x + off[b].x) - (pts[a].x + off[a].x), dy = (pts[b].y + off[b].y) - (pts[a].y + off[a].y);
+        let dist = Math.hypot(dx, dy);
+        if (dist >= GAP) continue;
+        if (dist < .01) { dx = 1; dy = 0; dist = 1; }
+        const push = (GAP - dist) / 2 + .5;
+        off[a].x -= dx / dist * push; off[a].y -= dy / dist * push;
+        off[b].x += dx / dist * push; off[b].y += dy / dist * push;
+        moved = true;
+      }
+      if (!moved) break;
+    }
+    ids.forEach((i, k) => {
+      pinMarkers[i].setOffset([off[k].x, off[k].y]);
+      dotMarkers[i].getElement().classList.toggle("show", Math.hypot(off[k].x, off[k].y) > 4);
+    });
+  }
+  let declutterQueued = false;
+  map.on("move", () => {
+    if (declutterQueued) return;
+    declutterQueued = true;
+    requestAnimationFrame(() => { declutterQueued = false; declutter(); });
   });
 
-  // Route from OSRM through every point (Cambridge included), one line per drive
+  // Route from OSRM through every point, one line per drive. Each plan's route is fetched once.
   let legs = null;
-  const routeReady = fetch(`https://router.project-osrm.org/route/v1/driving/${DAY.map(d => `${d.lng},${d.lat}`).join(";")}?overview=false&steps=true&geometries=geojson`)
-    .then(r => r.ok ? r.json() : Promise.reject())
-    .then(d => {
-      const r = d.routes[0];
-      legs = r.legs.map((l, j) => ({ j, coords: l.steps.flatMap(st => st.geometry.coordinates), min: Math.round(l.duration / 60), mi: Math.round(l.distance / 1609.34) }));
-    })
-    .catch(() => {
-      legs = DAY.slice(1).map((d, j) => ({ j, coords: [[DAY[j].lng, DAY[j].lat], [d.lng, d.lat]], min: null, mi: null, straight: true }));
-    })
-    .then(() => {
-      document.querySelectorAll("button[data-leg-btn]").forEach(b => {
-        const l = legs[+b.dataset.legBtn];
-        const drive = fmtDur(DAY[l.j + 1].drive);
-        b.textContent = l.mi != null ? `${drive} · ${l.mi} mi` : drive;
-      });
-    });
+  const routes = {};
+  function loadRoute(id) {
+    if (routes[id]) return Promise.resolve(routes[id]);
+    const day = PLANS[id].day;
+    return fetch(`https://router.project-osrm.org/route/v1/driving/${day.map(d => `${d.lng},${d.lat}`).join(";")}?overview=false&steps=true&geometries=geojson`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(d => d.routes[0].legs.map((l, j) => ({ j, coords: l.steps.flatMap(st => st.geometry.coordinates), mi: Math.round(l.distance / 1609.34) })))
+      .catch(() => day.slice(1).map((d, j) => ({ j, coords: [[day[j].lng, day[j].lat], [d.lng, d.lat]], mi: null, straight: true })))
+      .then(ls => (routes[id] = ls));
+  }
 
   function chevron() {
     const s = 32, c = document.createElement("canvas");
@@ -831,24 +980,28 @@
     }
     return coords[coords.length - 1];
   }
+  const legsData = () => ({ type: "FeatureCollection", features: legs.map(l => ({
+    type: "Feature", id: l.j,
+    properties: { leg: l.j, color: legColor(l.j), label: fmtDur(DAY[l.j + 1].drive) },
+    geometry: { type: "LineString", coordinates: l.coords } })) });
+  const midsData = () => ({ type: "FeatureCollection", features: legs.map(l => ({
+    type: "Feature", id: l.j,
+    properties: { label: fmtDur(DAY[l.j + 1].drive) },
+    geometry: { type: "Point", coordinates: midpoint(l.coords) } })) });
 
+  let styleReady = false;
+  function showRoute() {
+    if (!legs || !styleReady) return;
+    if (!map.getSource("legs")) { addRouteLayers(); return; }
+    map.getSource("legs").setData(legsData());
+    map.getSource("leg-mids").setData(midsData());
+    map.setPaintProperty("legs-line", "line-dasharray", legs[0].straight ? [2, 2] : undefined);
+    applyLegStates();
+  }
   function addRouteLayers() {
-    if (!legs || map.getSource("legs")) return;
     if (!map.hasImage("chev")) map.addImage("chev", chevron(), { pixelRatio: 2 });
-    map.addSource("legs", {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: legs.map(l => ({
-        type: "Feature", id: l.j,
-        properties: { leg: l.j, color: legColor(l.j), label: fmtDur(DAY[l.j + 1].drive) },
-        geometry: { type: "LineString", coordinates: l.coords } })) }
-    });
-    map.addSource("leg-mids", {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: legs.map(l => ({
-        type: "Feature", id: l.j,
-        properties: { label: fmtDur(DAY[l.j + 1].drive) },
-        geometry: { type: "Point", coordinates: midpoint(l.coords) } })) }
-    });
+    map.addSource("legs", { type: "geojson", data: legsData() });
+    map.addSource("leg-mids", { type: "geojson", data: midsData() });
     const focus = ["boolean", ["feature-state", "focus"], false];
     const dim = ["boolean", ["feature-state", "dim"], false];
     const width = (base, on) => ["interpolate", ["linear"], ["zoom"],
@@ -882,10 +1035,11 @@
     if (legEvents) return;
     legEvents = true;
     map.on("mousemove", "legs-hit", e => {
-      const l = legs[e.features[0].properties.leg];
+      const j = e.features[0].properties.leg;
+      if (!DAY[j + 1]) return;
       map.getCanvas().style.cursor = "pointer";
-      legTip.setLngLat(e.lngLat).setText(`${DAY[l.j].name} → ${DAY[l.j + 1].name} · ${fmtDur(DAY[l.j + 1].drive)}`).addTo(map);
-      setHoverLeg(l.j);
+      legTip.setLngLat(e.lngLat).setText(`${DAY[j].name} → ${DAY[j + 1].name} · ${fmtDur(DAY[j + 1].drive)}`).addTo(map);
+      setHoverLeg(j);
     });
     map.on("mouseleave", "legs-hit", () => {
       map.getCanvas().style.cursor = "";
@@ -895,8 +1049,8 @@
     map.on("click", "legs-hit", e => activate(String(e.features[0].properties.leg + 1), { scroll: true }));
   }
 
-  map.on("style.load", () => { autumnBase(); routeReady.then(addRouteLayers); });
-  darkQuery.addEventListener?.("change", e => map.setStyle(e.matches ? DARK : LIGHT));
+  map.on("style.load", () => { styleReady = true; autumnBase(); showRoute(); });
+  darkQuery.addEventListener?.("change", e => { styleReady = false; map.setStyle(e.matches ? DARK : LIGHT); });
 
   // ---- Keeping the map and the list in step ----
   // syncKey is a DAY index as a string, or "overview" after the Whole route button
@@ -930,7 +1084,7 @@
       const d = DAY[idxOf(key)];
       map.flyTo({ center: [d.lng, d.lat], zoom: 10, duration, essential: true });
     } else {
-      map.fitBounds(ALL_BOUNDS, { padding, duration, essential: true });
+      map.fitBounds(planBounds(), { padding, duration, essential: true });
     }
   }
 
@@ -1055,14 +1209,14 @@
   });
 
   // Clicking anywhere outside the selected stop unselects it and shows the whole route again.
-  // Clicks on the map controls, drives, pins and the photo viewer don't count; they select something themselves.
+  // Clicks on the map controls, drives, pins, the plan switch and the photo viewer don't count.
   const somethingSelected = () => !!document.querySelector(".stop.active, .stop.open");
   function deselect() {
     DAY.forEach((_, j) => setOpen(j, false));
     activate("overview");
   }
   document.addEventListener("click", e => {
-    if (lb.open || e.target.closest(".stop.active, .stop.open, .leg, .map-wrap, dialog, .budget")) return;
+    if (lb.open || e.target.closest(".stop.active, .stop.open, .leg, .map-wrap, dialog, .budget, .plan-switch")) return;
     if (somethingSelected()) deselect();
   });
   // Map clicks go through MapLibre so that dragging the map doesn't count as a click
@@ -1071,13 +1225,53 @@
     if (somethingSelected()) deselect();
   });
 
-  renderCosts();
+  // ---- Plan A / Plan B ----
+  // Switching rebuilds the itinerary, pins, route, budget and Google Maps link. #plan-b in the address opens Plan B.
+  function setPlan(id) {
+    if (lb.open) lb.close();
+    planId = id;
+    DAY = PLANS[id].day;
+    STOP_IDX = DAY.map((d, i) => d.kind === "stop" ? i : -1).filter(i => i >= 0);
+    COLORS = palette(STOP_IDX.length);
+    document.getElementById("plan-sub").textContent = PLANS[id].sub;
+    document.querySelectorAll(".plan-switch button[data-plan]").forEach(b => b.setAttribute("aria-pressed", b.dataset.plan === id));
+    document.getElementById("full-route").href = gmapsLink();
+    syncKey = null; hoverLeg = null;
+    legs = routes[id] || null;
+    renderTimeline();
+    renderCosts();
+    buildMarkers();
+    labelLegs();
+    showRoute();
+    return loadRoute(id).then(ls => {
+      if (planId !== id) return;
+      legs = ls;
+      labelLegs();
+      showRoute();
+    });
+  }
+  function switchPlan(id) {
+    if (id === planId) return;
+    const ready = setPlan(id);
+    activate(keyFromScroll());
+    ready.then(() => { if (planId === id) activate(syncKey || keyFromScroll()); });
+  }
+  const planFromHash = () => location.hash === "#plan-b" ? "b" : "a";
+  document.querySelector(".plan-switch").addEventListener("click", e => {
+    const b = e.target.closest("button[data-plan]");
+    if (!b || b.dataset.plan === planId) return;
+    try { history.replaceState(null, "", b.dataset.plan === "b" ? "#plan-b" : location.pathname + location.search); } catch (err) {}
+    switchPlan(b.dataset.plan);
+  });
+  window.addEventListener("hashchange", () => switchPlan(planFromHash()));
 
   // Start in step with wherever the page is already scrolled
-  Promise.all([routeReady, new Promise(r => map.loaded() ? r() : map.once("load", r))]).then(() => {
+  const firstRoute = setPlan(planFromHash());
+  Promise.all([firstRoute, new Promise(r => map.loaded() ? r() : map.once("load", r))]).then(() => {
     map.resize();
     document.querySelectorAll(".maplibregl-compact-show").forEach(el => el.classList.remove("maplibregl-compact-show"));
     activate(keyFromScroll(), { instant: true });
+    declutter();
   });
   updateNav();
 </script>
